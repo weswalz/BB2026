@@ -1,0 +1,154 @@
+---
+import AdminLayout from '../../../components/admin/AdminLayout.astro';
+import MediaSelector from '../../../components/admin/MediaSelector.astro';
+import { getPage, updatePage } from '../../../lib/pages.js';
+import { verifySession } from '../../../lib/auth.js';
+import { verifyCSRFToken, logAudit, getClientIP } from '../../../lib/security.js';
+
+const PAGE_ID = 'contact-us';
+
+// Get session data for CSRF token
+const sessionCookie = Astro.cookies.get('admin_session')?.value;
+const sessionData = verifySession(sessionCookie);
+
+let message = null;
+
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  const csrfToken = formData.get('csrf_token');
+
+  // Verify CSRF token first
+  if (!verifyCSRFToken(sessionData, csrfToken)) {
+    message = { type: 'error', text: 'Invalid security token. Please refresh and try again.' };
+  } else {
+    const fields = Object.fromEntries(formData.entries());
+    const success = await updatePage(PAGE_ID, fields);
+
+    if (success) {
+      // Log audit event
+      const ipAddress = getClientIP(Astro.request);
+      logAudit({
+        username: sessionData.user.username,
+        action: 'UPDATE',
+        entityType: 'page',
+        entityId: PAGE_ID,
+        ipAddress
+      });
+    }
+
+    message = success ? { type: 'success', text: 'Contact Us page updated successfully!' } : { type: 'error', text: 'Failed to update page.' };
+  }
+}
+
+const page = await getPage(PAGE_ID);
+const fields = page?.fields || {};
+const getField = (key, defaultValue = '') => fields[key] || defaultValue;
+---
+
+<AdminLayout pageTitle="Edit Contact Us Page">
+  <style>
+    .form-container { max-width: 960px; margin: 0 auto; background: var(--admin-bg-secondary); border: 1px solid var(--admin-border-subtle); padding: 2rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    fieldset { border: 1px solid var(--admin-border-subtle); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; }
+    legend { font-size: 1.25rem; font-weight: 600; padding: 0 0.5rem; color: var(--admin-text-primary); }
+    .form-group { margin-bottom: 1.5rem; }
+    label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--admin-text-primary); }
+    input[type="text"], input[type="email"], input[type="tel"], textarea { width: 100%; padding: 0.5rem 0.75rem; background: var(--admin-bg-tertiary); color: var(--admin-text-primary); border: 1px solid var(--admin-border-subtle); border-radius: 4px; font-size: 1rem; }
+    input[type="text"]:focus, input[type="email"]:focus, input[type="tel"]:focus, textarea:focus { outline: none; border-color: var(--admin-accent-primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+    .btn-primary { background: linear-gradient(135deg, #F7DF5B, #B8941F); color: #000; padding: 0.75rem 1.5rem; border: 1px solid #F7DF5B; border-radius: 4px; font-size: 1rem; cursor: pointer; font-weight: 600; }
+    .btn-primary:hover { background: linear-gradient(135deg, #FFE87C, #F7DF5B); transform: translateY(-1px); box-shadow: 0 0 30px rgba(247, 223, 91, 0.35); }
+    .alert { padding: 1rem; border-radius: 4px; margin-bottom: 1rem; }
+    .alert-success { background: rgba(16, 185, 129, 0.1); color: var(--admin-accent-success); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .alert-error { background: rgba(239, 68, 68, 0.1); color: var(--admin-accent-danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+  </style>
+
+  {message && <div class={`alert alert-${message.type}`}>{message.text}</div>}
+
+  <div class="form-container">
+    <form method="POST">
+      <input type="hidden" name="csrf_token" value={sessionData?.csrfToken} />
+      <fieldset>
+        <legend>SEO & Metadata</legend>
+        <div class="form-group">
+          <label for="seoTitle">SEO Title</label>
+          <input type="text" id="seoTitle" name="seoTitle" value={getField('seoTitle')} />
+        </div>
+        <div class="form-group">
+          <label for="seoDescription">SEO Description</label>
+          <textarea id="seoDescription" name="seoDescription">{getField('seoDescription')}</textarea>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Hero Section</legend>
+        <div class="form-group">
+          <label for="heroTitle">Title</label>
+          <input type="text" id="heroTitle" name="heroTitle" value={getField('heroTitle', 'CONTACT US')} />
+        </div>
+        <div class="form-group">
+          <label>Background Image</label>
+          <MediaSelector inputName="heroImage" inputId="heroImage" mediaType="image" initialValue={getField('heroImage')} />
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Get in Touch Section</legend>
+        <div class="form-group">
+          <label for="title">Title</label>
+          <input type="text" id="title" name="title" value={getField('title', 'Get in Touch')} />
+        </div>
+        <div class="form-group">
+          <label for="phone">Phone Number</label>
+          <input type="tel" id="phone" name="phone" value={getField('phone')} />
+        </div>
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email" value={getField('email')} />
+        </div>
+        <div class="form-group">
+          <label for="location">Location</label>
+          <input type="text" id="location" name="location" value={getField('location')} />
+        </div>
+        <div class="form-group">
+          <label for="website">Website</label>
+          <input type="text" id="website" name="website" value={getField('website')} />
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Contact Form</legend>
+        <div class="form-group">
+          <label for="formTitle">Form Title</label>
+          <input type="text" id="formTitle" name="formTitle" value={getField('formTitle', 'Send Us a Message')} />
+        </div>
+        <div class="form-group">
+          <label for="formFirstNamePlaceholder">First Name Placeholder</label>
+          <input type="text" id="formFirstNamePlaceholder" name="formFirstNamePlaceholder" value={getField('formFirstNamePlaceholder', 'First Name')} />
+        </div>
+        <div class="form-group">
+          <label for="formLastNamePlaceholder">Last Name Placeholder</label>
+          <input type="text" id="formLastNamePlaceholder" name="formLastNamePlaceholder" value={getField('formLastNamePlaceholder', 'Last Name')} />
+        </div>
+        <div class="form-group">
+          <label for="formEmailPlaceholder">Email Placeholder</label>
+          <input type="text" id="formEmailPlaceholder" name="formEmailPlaceholder" value={getField('formEmailPlaceholder', 'Email')} />
+        </div>
+        <div class="form-group">
+          <label for="formMessagePlaceholder">Message Placeholder</label>
+          <input type="text" id="formMessagePlaceholder" name="formMessagePlaceholder" value={getField('formMessagePlaceholder', 'Message')} />
+        </div>
+        <div class="form-group">
+          <label for="formCaptchaLabel">Captcha Label</label>
+          <input type="text" id="formCaptchaLabel" name="formCaptchaLabel" value={getField('formCaptchaLabel', "I'm not a robot")} />
+        </div>
+        <div class="form-group">
+          <label for="formSubmitButton">Submit Button Text</label>
+          <input type="text" id="formSubmitButton" name="formSubmitButton" value={getField('formSubmitButton', 'Send')} />
+        </div>
+      </fieldset>
+
+      <div class="form-group">
+        <button type="submit" class="btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</AdminLayout>

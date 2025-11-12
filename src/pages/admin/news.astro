@@ -1,0 +1,330 @@
+---
+import AdminLayout from '../../components/admin/AdminLayout.astro';
+import { getAllNews, deleteNews, restoreNews } from '../../lib/news.js';
+import { requireAuth, isAdministrator } from '../../lib/auth-middleware.js';
+import { verifySession } from '../../lib/auth.js';
+import { verifyCSRFToken, logAudit, getClientIP } from '../../lib/security.js';
+
+// Check authentication first, before any async operations
+const authRedirect = requireAuth(Astro);
+if (authRedirect) return authRedirect;
+
+// Get session data for CSRF token
+const sessionCookie = Astro.cookies.get('admin_session')?.value;
+const sessionData = verifySession(sessionCookie);
+const isAdmin = isAdministrator(Astro);
+
+// Handle delete and restore actions
+let message = null;
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  const action = formData.get('action');
+  const newsId = formData.get('newsId');
+  const csrfToken = formData.get('csrf_token');
+
+  // Verify CSRF token
+  if (!verifyCSRFToken(sessionData, csrfToken)) {
+    message = { type: 'error', text: 'Invalid security token. Please refresh and try again.' };
+  } else if (action === 'delete' && newsId) {
+    try {
+      const deleted = await deleteNews(newsId, sessionData.user.username);
+      if (deleted) {
+        // Log deletion
+        const ipAddress = getClientIP(Astro.request);
+        logAudit({
+          username: sessionData.user.username,
+          action: 'DELETE',
+          entityType: 'news',
+          entityId: newsId,
+          ipAddress
+        });
+        message = { type: 'success', text: 'News article deleted successfully!' };
+      } else {
+        message = { type: 'error', text: 'Failed to delete news article.' };
+      }
+    } catch (error) {
+      message = { type: 'error', text: 'Error deleting news article.' };
+    }
+  } else if (action === 'restore' && newsId && isAdmin) {
+    try {
+      const restored = await restoreNews(newsId);
+      if (restored) {
+        // Log restoration
+        const ipAddress = getClientIP(Astro.request);
+        logAudit({
+          username: sessionData.user.username,
+          action: 'RESTORE',
+          entityType: 'news',
+          entityId: newsId,
+          ipAddress
+        });
+        message = { type: 'success', text: 'News article restored successfully!' };
+      } else {
+        message = { type: 'error', text: 'Failed to restore news article.' };
+      }
+    } catch (error) {
+      message = { type: 'error', text: 'Error restoring news article.' };
+    }
+  }
+}
+
+// Get filter from query params
+const url = new URL(Astro.request.url);
+const filter = url.searchParams.get('filter') || 'all';
+const searchQuery = url.searchParams.get('search') || '';
+
+// Build query based on filter
+let query = {};
+if (filter === 'published') query.published = true;
+if (filter === 'draft') query.published = false;
+if (filter === 'featured') query.featured = true;
+
+// Get all news articles - admins can see deleted items
+let newsArticles = await getAllNews({ includeDeleted: isAdmin });
+
+// Apply search filter
+if (searchQuery) {
+  const searchLower = searchQuery.toLowerCase();
+  newsArticles = newsArticles.filter(article =>
+    article.title?.toLowerCase().includes(searchLower) ||
+    article.excerpt?.toLowerCase().includes(searchLower) ||
+    article.category?.toLowerCase().includes(searchLower) ||
+    article.author?.toLowerCase().includes(searchLower)
+  );
+}
+
+// Format date helper
+function formatDate(date) {
+  if (!date) return 'N/A';
+  return new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+}
+---
+
+<AdminLayout pageTitle="News">
+  <div slot="header-actions">
+    <a href="/admin/news/new" class="btn btn-primary">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12h14"/>
+        <path d="M12 5v14"/>
+      </svg>
+      Add New Article
+    </a>
+  </div>
+
+  {message && (
+    <div class={`alert alert-${message.type}`}>
+      {message.text}
+    </div>
+  )}
+
+  <!-- Statistics Grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <!-- Total Articles -->
+    <div class="bg-card border border-border rounded-lg p-6 transition-all hover:shadow-lg">
+      <div class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-gold-primary/10 text-gold-primary mb-3" style="background-color: rgba(247, 223, 91, 0.1); color: #F7DF5B;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+          <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+        </svg>
+      </div>
+      <div class="text-sm font-medium text-muted-foreground mb-2">Total Articles</div>
+      <div class="text-3xl font-bold text-foreground">{newsArticles.length}</div>
+    </div>
+
+    <!-- Published -->
+    <div class="bg-card border border-border rounded-lg p-6 transition-all hover:shadow-lg">
+      <div class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-green-500/10 text-green-600 mb-3">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+      </div>
+      <div class="text-sm font-medium text-muted-foreground mb-2">Published</div>
+      <div class="text-3xl font-bold text-foreground">{newsArticles.filter(n => n.published).length}</div>
+    </div>
+
+    <!-- Drafts -->
+    <div class="bg-card border border-border rounded-lg p-6 transition-all hover:shadow-lg">
+      <div class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-amber-500/10 text-amber-600 mb-3">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+      </div>
+      <div class="text-sm font-medium text-muted-foreground mb-2">Drafts</div>
+      <div class="text-3xl font-bold text-foreground">{newsArticles.filter(n => !n.published).length}</div>
+    </div>
+
+    <!-- Featured -->
+    <div class="bg-card border border-border rounded-lg p-6 transition-all hover:shadow-lg">
+      <div class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-purple-500/10 text-purple-600 mb-3">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+      </div>
+      <div class="text-sm font-medium text-muted-foreground mb-2">Featured</div>
+      <div class="text-3xl font-bold text-foreground">{newsArticles.filter(n => n.featured).length}</div>
+    </div>
+  </div>
+
+  <!-- Search and Filters -->
+  <div class="flex flex-col md:flex-row gap-4 mb-6 bg-card border border-border rounded-lg p-4">
+    <!-- Search Box -->
+    <div class="flex-1 min-w-0 md:min-w-[250px] relative">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <path d="m21 21-4.3-4.3"/>
+      </svg>
+      <form method="GET" action="/admin/news">
+        <input
+          type="text"
+          name="search"
+          class="w-full pl-10 pr-3 py-2.5 border border-border rounded-md text-sm bg-background text-foreground focus:outline-none focus:border-ring focus:ring-4 focus:ring-ring/10 transition-all"
+          placeholder="Search articles by title, excerpt, category, or author..."
+          value={searchQuery}
+        />
+        {filter !== 'all' && <input type="hidden" name="filter" value={filter} />}
+      </form>
+    </div>
+
+    <!-- Filter Buttons -->
+    <div class="btn-group">
+      <a href="/admin/news" class={filter === 'all' ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm'}>
+        All
+      </a>
+      <a href="/admin/news?filter=published" class={filter === 'published' ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm'}>
+        Published
+      </a>
+      <a href="/admin/news?filter=draft" class={filter === 'draft' ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm'}>
+        Drafts
+      </a>
+      <a href="/admin/news?filter=featured" class={filter === 'featured' ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm'}>
+        Featured
+      </a>
+    </div>
+  </div>
+
+  <!-- News Table -->
+  {newsArticles.length > 0 ? (
+    <div class="bg-card border border-border rounded-lg overflow-hidden">
+      <table class="w-full border-collapse">
+        <thead>
+          <tr class="bg-muted/50 border-b border-border">
+            <th class="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Title</th>
+            <th class="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Status</th>
+            <th class="px-4 py-3.5 text-left text-sm font-semibold text-foreground hidden md:table-cell">Category</th>
+            <th class="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Date</th>
+            <th class="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {newsArticles.map(article => (
+            <tr class={`border-b border-border last:border-0 transition-colors hover:bg-muted/30 ${article.isDeleted ? 'opacity-60' : ''}`}>
+              <td class="px-4 py-4 max-w-md">
+                <div class="flex items-center gap-2 font-semibold text-foreground mb-1">
+                  {article.title}
+                  {article.isDeleted && (
+                    <span class="inline-block px-2 py-1 text-xs font-medium rounded bg-red-500/20 text-red-600 border border-red-500/30">
+                      DELETED
+                    </span>
+                  )}
+                  {article.featured && !article.isDeleted && (
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wide bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                      </svg>
+                      Featured
+                    </span>
+                  )}
+                </div>
+                {article.excerpt && (
+                  <div class="text-[13px] text-muted-foreground truncate hidden md:block">{article.excerpt}</div>
+                )}
+              </td>
+              <td class="px-4 py-4">
+                <span class={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold uppercase tracking-wide border ${
+                  article.published
+                    ? 'bg-green-500/10 text-green-600 border-green-500/20'
+                    : 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20'
+                }`}>
+                  <span class={`w-1.5 h-1.5 rounded-full ${article.published ? 'bg-green-600' : 'bg-yellow-600'}`}></span>
+                  {article.published ? 'Published' : 'Draft'}
+                </span>
+              </td>
+              <td class="px-4 py-4 text-sm text-foreground hidden md:table-cell">{article.category || 'Uncategorized'}</td>
+              <td class="px-4 py-4 text-sm text-foreground">{formatDate(article.published ? article.publishedAt : article.createdAt)}</td>
+              <td class="px-4 py-4">
+                <div class="flex gap-2">
+                  {!article.isDeleted && (
+                    <>
+                      <a href={`/admin/news/edit/${article.id}`} class="btn btn-primary btn-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                          <path d="m15 5 4 4"/>
+                        </svg>
+                        Edit
+                      </a>
+                      <form method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this article?');">
+                        <input type="hidden" name="action" value="delete" />
+                        <input type="hidden" name="newsId" value={article.id} />
+                        <input type="hidden" name="csrf_token" value={sessionData?.csrfToken} />
+                        <button type="submit" class="btn btn-danger btn-sm">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"/>
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                          </svg>
+                          Delete
+                        </button>
+                      </form>
+                    </>
+                  )}
+                  {article.isDeleted && isAdmin && (
+                    <form method="POST" class="inline">
+                      <input type="hidden" name="action" value="restore" />
+                      <input type="hidden" name="newsId" value={article.id} />
+                      <input type="hidden" name="csrf_token" value={sessionData?.csrfToken} />
+                      <button type="submit" class="btn btn-secondary btn-sm">
+                        Restore
+                      </button>
+                    </form>
+                  )}
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ) : (
+    <div class="text-center py-16 px-8 bg-card border border-border rounded-lg">
+      <div class="w-16 h-16 mx-auto mb-6 flex items-center justify-center rounded-full bg-muted text-muted-foreground">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+          <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+        </svg>
+      </div>
+      <h2 class="text-2xl font-semibold text-foreground mb-2">No News Articles</h2>
+      <p class="text-muted-foreground mb-6 text-[15px]">
+        {searchQuery
+          ? `No articles found matching "${searchQuery}"`
+          : filter === 'all'
+            ? "You haven't created any news articles yet."
+            : `No ${filter} articles found.`}
+      </p>
+      {!searchQuery && (
+        <a href="/admin/news/new" class="btn-primary inline-flex">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"/>
+            <path d="M12 5v14"/>
+          </svg>
+          Create Your First Article
+        </a>
+      )}
+    </div>
+  )}
+</AdminLayout>

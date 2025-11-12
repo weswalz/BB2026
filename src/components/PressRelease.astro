@@ -1,0 +1,219 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from './sections/Header.astro';
+import Footer from './sections/Footer.astro';
+import BoxForUsSection from './sections/BoxForUsSection.astro';
+
+export interface Props {
+  title: string;
+  excerpt: string;
+  publishDate: Date;
+  image: string;
+  imageAlt: string;
+  author: string;
+  location: string;
+  content: string;
+  slug: string;
+  tags: string[];
+  metaDescription?: string;
+}
+
+const { 
+  title, 
+  excerpt, 
+  publishDate, 
+  image, 
+  imageAlt, 
+  author, 
+  location, 
+  content, 
+  slug,
+  tags,
+  metaDescription 
+} = Astro.props;
+
+const formatDate = (date: Date) => {
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long'
+  });
+};
+
+// Generate structured data for SEO
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "NewsArticle",
+  "headline": title,
+  "description": excerpt,
+  "image": `https://biyuboxing.com${image}`,
+  "author": {
+    "@type": "Organization",
+    "name": author
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "BiYu Promotions",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://biyuboxing.com/images/logos/logo-white.png"
+    }
+  },
+  "datePublished": publishDate.toISOString(),
+  "dateModified": publishDate.toISOString(),
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": `https://biyuboxing.com/news/${slug}`
+  }
+};
+---
+
+<Layout 
+  title={`${title} - BiYu Promotions | Latest Boxing News & Updates`}
+  description={metaDescription || excerpt}
+>
+  <Header />
+  
+  <main class="min-h-screen">
+    <!-- Hero Section -->
+    <section class="relative h-[60vh] min-h-[400px] flex items-center justify-center text-white">
+      <div class="absolute inset-0 z-0">
+        <img 
+          src="/images/newshero.webp" 
+          alt="BiYu Promotions News" 
+          class="w-full h-full object-cover"
+        />
+        <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70"></div>
+      </div>
+      
+      <div class="relative z-10 container mx-auto px-4 text-center">
+        <h1 class="text-5xl md:text-7xl font-display font-bold mb-6 hero-text boxing-glow">
+          NEWS
+        </h1>
+      </div>
+    </section>
+
+    <!-- Article Section -->
+    <section class="py-16 bg-black text-white">
+      <div class="container mx-auto px-4">
+        <div class="max-w-4xl mx-auto">
+          <!-- Back to News Link -->
+          <div class="mb-8">
+            <a href="/news/" class="text-[#FFD700] hover:underline text-sm">← Back to All News</a>
+          </div>
+          
+          <!-- Article Header -->
+          <article class="mb-16">
+            <div class="grid lg:grid-cols-2 gap-8 items-start">
+              <div class="lg:order-2">
+                <img 
+                  src={image} 
+                  alt={imageAlt}
+                  class="w-full h-auto rounded"
+                  loading="lazy"
+                />
+              </div>
+              <div class="lg:order-1">
+                <h2 class="text-3xl font-display font-bold mb-4 text-[#FFD700]">{title}</h2>
+                <p class="text-lg mb-4">{excerpt}</p>
+                <div class="flex items-center gap-4 mb-8">
+                  <span class="text-sm text-gray-400">{formatDate(publishDate)}</span>
+                  <span class="text-sm text-gray-400">By {author}</span>
+                  <span class="text-sm text-gray-400">{location}</span>
+                </div>
+              </div>
+            </div>
+          </article>
+          
+          <!-- Article Content -->
+          <div class="prose prose-lg prose-invert max-w-none mb-12">
+            <div class="article-content text-lg leading-relaxed space-y-6">
+              <slot />
+              {content && <div set:html={content} />}
+            </div>
+          </div>
+
+          <!-- Tags -->
+          {tags.length > 0 && (
+            <div class="mb-12 pt-8 border-t border-gray-700">
+              <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Tags</h3>
+              <div class="flex flex-wrap gap-2">
+                {tags.map(tag => (
+                  <span class="bg-gray-800 text-gray-300 px-3 py-1 rounded-full text-sm hover:bg-[#FFD700] hover:text-black transition-colors">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <!-- Standard Press Release Footer -->
+          <div class="mt-16 pt-8 border-t border-gray-700">
+            <div class="bg-gray-800 rounded-lg p-8">
+              <h3 class="text-2xl font-bold text-[#FFD700] mb-4">About BiYu Promotions</h3>
+              <p class="text-gray-300 leading-relaxed mb-6">
+                BiYu Boxing Promotions has staged boxing events and developed boxing talent for more than 15 years. Founded by Bobby Harrison, a licensed boxing promoter and boxing manager, BiYu Promotions is the epitome of passion and global ambition with its headquarters in Houston, Texas, and offices in Tampa and Santo Domingo in the Dominican Republic.
+              </p>
+              
+              <div class="border-t border-gray-600 pt-6">
+                <h4 class="font-bold text-white mb-2">Media Contact:</h4>
+                <p class="text-gray-300">
+                  BiYu Promotions<br>
+                  Houston, TX<br>
+                  Website: <a href="https://www.biyuboxing.com" class="text-[#FFD700] hover:underline">www.biyuboxing.com</a>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-center mt-12">
+            <a href="/news/" class="biyu-unified-btn">
+              ← Back to All News
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <BoxForUsSection />
+    
+  </main>
+
+  <Footer />
+
+  <!-- Structured Data -->
+  <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+</Layout>
+
+<style>
+  .article-content p {
+    margin-bottom: 1.5rem;
+  }
+  
+  .article-content strong {
+    color: #FFD700;
+  }
+  
+  .article-content blockquote {
+    border-left: 4px solid #FFD700;
+    padding-left: 1.5rem;
+    font-style: italic;
+    color: #cccccc;
+    margin: 2rem 0;
+  }
+
+  .article-content h2 {
+    color: #FFD700;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .article-content h3 {
+    color: #FFD700;
+    font-size: 1.25rem;
+    font-weight: bold;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+</style>

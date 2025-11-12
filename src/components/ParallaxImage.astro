@@ -1,0 +1,20 @@
+---
+const ParallaxImage = (await import('./motion/ParallaxImage.tsx')).default;
+
+export interface Props {
+  src: string;
+  alt: string;
+  className?: string;
+  speed?: number;
+}
+
+const { src, alt, className = '', speed = 0.5 } = Astro.props;
+---
+
+<ParallaxImage 
+  src={src} 
+  alt={alt} 
+  className={className} 
+  speed={speed} 
+  client:visible
+/>

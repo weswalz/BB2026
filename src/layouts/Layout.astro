@@ -1,0 +1,184 @@
+---
+// Import CSS files
+import '../styles/global.css';
+import '../styles/biyu.css';
+import '../styles/responsive.css';
+import '../styles/animations.css';
+import SEO from '../components/SEO.astro';
+
+export interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  noIndex?: boolean;
+  keywords?: string[];
+  articleType?: 'article' | 'website';
+  publishedTime?: string;
+  modifiedTime?: string;
+  author?: string;
+  section?: string;
+  canonical?: string;
+}
+
+const { 
+  title = "BiYu Promotions - Elite Boxing Talent Development & Fighter Promotion",
+  description = "BiYu Promotions specializes in developing world-class boxers for major boxing organizations. Led by licensed promoter Bobby Harrison with 15+ years experience. Breeding championship-level fighters from Houston, Tampa & Santo Domingo.",
+  image = "/images/logos/logo-white.png",
+  noIndex = false,
+  keywords = ["boxing promotions", "fighter development", "boxing talent scouting", "Bobby Harrison", "BiYu Boxing", "professional boxing management", "Houston boxing", "Dominican Republic boxing", "world championship preparation", "boxing careers", "amateur to professional boxing"],
+  articleType = "website",
+  publishedTime,
+  modifiedTime,
+  author,
+  section,
+  canonical
+} = Astro.props;
+
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const fullImageURL = new URL(image, Astro.site);
+
+// Enhanced meta keywords
+const metaKeywords = keywords.join(", ");
+
+// Generate structured data for organization
+const organizationStructuredData = {
+  "@context": "https://schema.org",
+  "@type": "SportsOrganization",
+  "@id": "https://biyuboxing.com/#organization",
+  "name": "BiYu Promotions",
+  "alternateName": "BiYu Boxing",
+  "url": "https://biyuboxing.com",
+  "logo": {
+    "@type": "ImageObject",
+    "url": "https://biyuboxing.com/images/logos/logo-white.png",
+    "width": 250,
+    "height": 100
+  },
+  "description": "Professional boxing promotion company specializing in developing elite fighters for major boxing organizations. Founded by Bobby Harrison with 15+ years of experience.",
+  "foundingDate": "2009",
+  "founder": {
+    "@type": "Person",
+    "name": "Bobby Harrison",
+    "jobTitle": "CEO and Licensed Boxing Promoter"
+  },
+  "address": [
+    {
+      "@type": "PostalAddress",
+      "addressLocality": "Houston",
+      "addressRegion": "Texas",
+      "addressCountry": "US",
+      "description": "Headquarters"
+    },
+    {
+      "@type": "PostalAddress",
+      "addressLocality": "Tampa",
+      "addressRegion": "Florida", 
+      "addressCountry": "US",
+      "description": "Regional Office"
+    },
+    {
+      "@type": "PostalAddress",
+      "addressLocality": "Santo Domingo",
+      "addressCountry": "DO",
+      "description": "International Office"
+    }
+  ],
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "telephone": "+1-346-268-1590",
+    "email": "info@biyuboxing.com",
+    "contactType": "customer service"
+  },
+  "sport": "Boxing",
+  "subOrganization": [
+    {
+      "@type": "SportsTeam",
+      "name": "BiYu Fighters",
+      "sport": "Boxing",
+      "memberOf": {
+        "@id": "https://biyuboxing.com/#organization"
+      }
+    }
+  ],
+  "knowsAbout": [
+    "Professional Boxing Promotion",
+    "Fighter Development",
+    "Talent Scouting",
+    "Boxing Management",
+    "World Championship Preparation"
+  ],
+  "areaServed": ["United States", "Dominican Republic", "International"],
+  "sameAs": [
+    "https://twitter.com/biyuboxing",
+    "https://instagram.com/biyuboxing"
+  ]
+};
+---
+
+<!doctype html>
+<html lang="en" data-theme="biyuboxing">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="theme-color" content="#D4AF37" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		
+		<!-- Core Web Vitals Optimization -->
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+		
+		<!-- SEO Component -->
+		<SEO 
+			title={title}
+			description={description}
+			image={image}
+			canonical={canonical}
+			noindex={noIndex}
+			article={publishedTime ? {
+				publishedTime,
+				modifiedTime,
+				author,
+				section
+			} : undefined}
+			type={articleType}
+		/>
+		
+		<!-- Preserve existing SEO equity with fallback meta tags -->
+		<meta name="keywords" content={metaKeywords} />
+		
+		<!-- Performance and Security -->
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="referrer" content="strict-origin-when-cross-origin" />
+		
+		<!-- Critical Performance Optimizations -->
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		
+		<!-- Optimize font loading for Core Web Vitals -->
+		<link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Russo+One&display=swap" as="style" />
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Russo+One&display=swap" media="print" onload="this.media='all'" />
+		<noscript>
+			<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Russo+One&display=swap" />
+		</noscript>
+		
+		<!-- Favicon set for all devices -->
+		<link rel="icon" type="image/x-icon" href="/favicon.ico" />
+		<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+		<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+		<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+		
+		<!-- Web App Manifest -->
+		<link rel="manifest" href="/site.webmanifest" />
+		<meta name="application-name" content="Biyu Boxing" />
+		<meta name="apple-mobile-web-app-title" content="Biyu Boxing" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+	</head>
+	<body class="min-h-screen bg-base-100 text-base-content font-sans antialiased" data-instant-intensity="viewport">
+		<slot />
+		<script src="/src/scripts/animations.js"></script>
+		
+		<!-- Organization Structured Data -->
+		<script type="application/ld+json" set:html={JSON.stringify(organizationStructuredData)} />
+	</body>
+</html>

@@ -1,0 +1,57 @@
+---
+// Breadcrumb navigation component
+import type { BreadcrumbItem } from '../../types/content';
+
+interface Props {
+  items: BreadcrumbItem[];
+  className?: string;
+}
+
+const { items, className = '' } = Astro.props;
+---
+
+<nav aria-label="Breadcrumb" class={`breadcrumbs text-sm ${className}`}>
+  <ul class="flex items-center space-x-2 text-base-content/70">
+    {items.map((item, index) => (
+      <li class="flex items-center">
+        {index > 0 && (
+          <svg 
+            class="w-4 h-4 mx-2 text-base-content/40" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path 
+              stroke-linecap="round" 
+              stroke-linejoin="round" 
+              stroke-width="2" 
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        )}
+        
+        {item.current ? (
+          <span class="text-primary font-medium" aria-current="page">
+            {item.label}
+          </span>
+        ) : (
+          <a 
+            href={item.href} 
+            class="hover:text-primary transition-colors duration-200"
+          >
+            {item.label}
+          </a>
+        )}
+      </li>
+    ))}
+  </ul>
+</nav>
+
+<style>
+  /* Additional breadcrumb styling */
+  .breadcrumbs a:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+  }
+</style>

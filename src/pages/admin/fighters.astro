@@ -1,0 +1,164 @@
+---
+import AdminLayout from '../../components/admin/AdminLayout.astro';
+import { getAllFighters, deleteFighter, restoreFighter } from '../../lib/fighters.js';
+import { requireAuth, isAdministrator } from '../../lib/auth-middleware.js';
+import { verifyCSRFToken, logAudit, getClientIP } from '../../lib/security.js';
+import { verifySession } from '../../lib/auth.js';
+
+// Check authentication first, before any async operations
+const authRedirect = requireAuth(Astro);
+if (authRedirect) return authRedirect;
+
+// Get session data for CSRF token
+const sessionCookie = Astro.cookies.get('admin_session')?.value;
+const sessionData = verifySession(sessionCookie);
+const isAdmin = isAdministrator(Astro);
+
+// Handle delete and restore actions
+let message = null;
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  const action = formData.get('action');
+  const fighterId = formData.get('fighterId');
+  const csrfToken = formData.get('csrf_token');
+
+  // Verify CSRF token
+  if (!verifyCSRFToken(sessionData, csrfToken)) {
+    message = { type: 'error', text: 'Invalid security token. Please refresh and try again.' };
+  } else if (action === 'delete' && fighterId) {
+    try {
+      const deleted = await deleteFighter(fighterId, sessionData.user.username);
+      if (deleted) {
+        // Log deletion
+        const ipAddress = getClientIP(Astro.request);
+        logAudit({
+          username: sessionData.user.username,
+          action: 'DELETE',
+          entityType: 'fighter',
+          entityId: fighterId,
+          ipAddress
+        });
+        message = { type: 'success', text: 'Fighter deleted successfully!' };
+      } else {
+        message = { type: 'error', text: 'Failed to delete fighter.' };
+      }
+    } catch (error) {
+      message = { type: 'error', text: 'Error deleting fighter.' };
+    }
+  } else if (action === 'restore' && fighterId && isAdmin) {
+    try {
+      const restored = await restoreFighter(fighterId);
+      if (restored) {
+        // Log restoration
+        const ipAddress = getClientIP(Astro.request);
+        logAudit({
+          username: sessionData.user.username,
+          action: 'RESTORE',
+          entityType: 'fighter',
+          entityId: fighterId,
+          ipAddress
+        });
+        message = { type: 'success', text: 'Fighter restored successfully!' };
+      } else {
+        message = { type: 'error', text: 'Failed to restore fighter.' };
+      }
+    } catch (error) {
+      message = { type: 'error', text: 'Error restoring fighter.' };
+    }
+  }
+}
+
+// Get all fighters - admins can see deleted items
+const fighters = await getAllFighters({ includeDeleted: isAdmin });
+---
+
+<AdminLayout pageTitle="Fighters">
+  <div slot="header-actions">
+    <a href="/admin/fighters/new" class="btn btn-primary">
+      Add New Fighter
+    </a>
+  </div>
+
+  {message && (
+    <div class={`p-4 rounded-lg mb-4 border ${
+      message.type === 'success'
+        ? 'bg-green-500/10 text-green-600 border-green-500/30'
+        : 'bg-red-500/10 text-red-600 border-red-500/30'
+    }`}>
+      {message.text}
+    </div>
+  )}
+
+  <div class="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
+    {fighters.length > 0 ? (
+      <table class="w-full border-collapse">
+        <thead>
+          <tr class="bg-muted/50 border-b border-border">
+            <th class="px-4 py-3 text-left font-semibold text-foreground">Image</th>
+            <th class="px-4 py-3 text-left font-semibold text-foreground">Name</th>
+            <th class="px-4 py-3 text-left font-semibold text-foreground">Record</th>
+            <th class="px-4 py-3 text-left font-semibold text-foreground">Weight Class</th>
+            <th class="px-4 py-3 text-left font-semibold text-foreground">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {fighters.map(fighter => (
+            <tr class={`border-b border-border last:border-0 transition-colors hover:bg-muted/30 ${fighter.isDeleted ? 'opacity-60' : ''}`}>
+              <td class="px-4 py-3">
+                {fighter.image && (
+                  <img src={fighter.image} alt={fighter.name} class="w-20 h-20 object-cover rounded-full" />
+                )}
+              </td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <span class="font-semibold text-foreground">{fighter.name}</span>
+                  {fighter.isDeleted && (
+                    <span class="inline-block px-2 py-1 text-xs font-medium rounded bg-red-500/20 text-red-600 border border-red-500/30">
+                      DELETED
+                    </span>
+                  )}
+                </div>
+              </td>
+              <td class="px-4 py-3 text-foreground">{fighter.record}</td>
+              <td class="px-4 py-3 text-foreground">{fighter.weightClass}</td>
+              <td class="px-4 py-3">
+                <div class="flex gap-2">
+                  {!fighter.isDeleted && (
+                    <>
+                      <a href={`/admin/fighters/edit/${fighter.id}`} class="btn btn-primary btn-sm">
+                        Edit
+                      </a>
+                      <form method="POST" class="inline">
+                        <input type="hidden" name="action" value="delete" />
+                        <input type="hidden" name="fighterId" value={fighter.id} />
+                        <input type="hidden" name="csrf_token" value={sessionData?.csrfToken} />
+                        <button type="submit" class="btn btn-danger btn-sm"
+                          onclick="return confirm('Are you sure you want to delete this fighter?')">
+                          Delete
+                        </button>
+                      </form>
+                    </>
+                  )}
+                  {fighter.isDeleted && isAdmin && (
+                    <form method="POST" class="inline">
+                      <input type="hidden" name="action" value="restore" />
+                      <input type="hidden" name="fighterId" value={fighter.id} />
+                      <input type="hidden" name="csrf_token" value={sessionData?.csrfToken} />
+                      <button type="submit" class="btn btn-secondary btn-sm">
+                        Restore
+                      </button>
+                    </form>
+                  )}
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    ) : (
+      <div class="text-center py-12 text-muted-foreground">
+        <p>No fighters found. Click "Add New Fighter" to create your first fighter.</p>
+      </div>
+    )}
+  </div>
+</AdminLayout>

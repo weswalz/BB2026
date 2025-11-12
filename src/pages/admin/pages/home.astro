@@ -1,0 +1,177 @@
+---
+import AdminLayout from '../../../components/admin/AdminLayout.astro';
+import MediaSelector from '../../../components/admin/MediaSelector.astro';
+import { getPage, updatePage } from '../../../lib/pages.js';
+import { verifySession } from '../../../lib/auth.js';
+import { verifyCSRFToken, logAudit, getClientIP } from '../../../lib/security.js';
+
+// Get session data for CSRF token
+const sessionCookie = Astro.cookies.get('admin_session')?.value;
+const sessionData = verifySession(sessionCookie);
+
+let message = null;
+
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  const csrfToken = formData.get('csrf_token');
+
+  // Verify CSRF token first
+  if (!verifyCSRFToken(sessionData, csrfToken)) {
+    message = { type: 'error', text: 'Invalid security token. Please refresh and try again.' };
+  } else {
+    const fields = Object.fromEntries(formData.entries());
+
+    const success = await updatePage('home', fields);
+
+    if (success) {
+      // Log audit event
+      const ipAddress = getClientIP(Astro.request);
+      logAudit({
+        username: sessionData.user.username,
+        action: 'UPDATE',
+        entityType: 'page',
+        entityId: 'home',
+        ipAddress
+      });
+
+      message = { type: 'success', text: 'Homepage content updated successfully!' };
+    } else {
+      message = { type: 'error', text: 'Failed to update homepage content.' };
+    }
+  }
+}
+
+const page = await getPage('home');
+const fields = page?.fields || {};
+const getField = (key, defaultValue = '') => fields[key] || defaultValue;
+---
+
+<AdminLayout pageTitle="Edit Homepage Content">
+  <style>
+    .form-container { max-width: 960px; margin: 0 auto; background: var(--admin-bg-secondary); border: 1px solid var(--admin-border-subtle); padding: 2rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    fieldset { border: 1px solid var(--admin-border-subtle); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; }
+    legend { font-size: 1.25rem; font-weight: 600; padding: 0 0.5rem; color: var(--admin-text-primary); }
+    .form-group { margin-bottom: 1.5rem; }
+    label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--admin-text-primary); }
+    input[type="text"], textarea { width: 100%; padding: 0.5rem 0.75rem; background: var(--admin-bg-tertiary); color: var(--admin-text-primary); border: 1px solid var(--admin-border-subtle); border-radius: 4px; font-size: 1rem; }
+    input[type="text"]:focus, textarea:focus { outline: none; border-color: var(--admin-accent-primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+    textarea { min-height: 100px; }
+    .btn-primary { background: linear-gradient(135deg, #F7DF5B, #B8941F); color: #000; padding: 0.75rem 1.5rem; border: 1px solid #F7DF5B; border-radius: 4px; font-size: 1rem; cursor: pointer; font-weight: 600; }
+    .btn-primary:hover { background: linear-gradient(135deg, #FFE87C, #F7DF5B); transform: translateY(-1px); box-shadow: 0 0 30px rgba(247, 223, 91, 0.35); }
+    .alert { padding: 1rem; border-radius: 4px; margin-bottom: 1rem; }
+    .alert-success { background: rgba(16, 185, 129, 0.1); color: var(--admin-accent-success); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .alert-error { background: rgba(239, 68, 68, 0.1); color: var(--admin-accent-danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+    .help-text { font-size: 0.875rem; color: var(--admin-text-secondary); margin-top: 0.25rem; }
+  </style>
+
+  {message && (
+    <div class={`alert alert-${message.type}`}>
+      {message.text}
+    </div>
+  )}
+
+  <div class="form-container">
+    <form method="POST">
+      <input type="hidden" name="csrf_token" value={sessionData?.csrfToken} />
+      <fieldset>
+        <legend>SEO & Metadata</legend>
+        <div class="form-group">
+          <label for="seoTitle">SEO Title</label>
+          <input type="text" id="seoTitle" name="seoTitle" value={getField('seoTitle')} />
+          <p class="help-text">The title that appears in the browser tab and search engine results.</p>
+        </div>
+        <div class="form-group">
+          <label for="seoDescription">SEO Description</label>
+          <textarea id="seoDescription" name="seoDescription">{getField('seoDescription')}</textarea>
+          <p class="help-text">The short description used for search engine results.</p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Hero Section</legend>
+        <div class="form-group">
+          <label for="heroTitle">Title</label>
+          <input type="text" id="heroTitle" name="heroTitle" value={getField('heroTitle', 'BIYU PROMOTIONS')} />
+        </div>
+        <div class="form-group">
+          <label for="heroSubtitle">Subtitle</label>
+          <input type="text" id="heroSubtitle" name="heroSubtitle" value={getField('heroSubtitle', 'Fighting For Legacy, Driven by Culture')} />
+        </div>
+        <div class="form-group">
+          <label>Background Image</label>
+          <MediaSelector inputName="heroImage" inputId="heroImage" mediaType="image" initialValue={getField('heroImage')} />
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Latest News Section</legend>
+        <div class="form-group">
+          <label for="latestNewsTitle">Section Title</label>
+          <input type="text" id="latestNewsTitle" name="latestNewsTitle" value={getField('latestNewsTitle', 'latest News')} />
+          <p class="help-text">Use HTML for yellow text, e.g., `&lt;span class="biyu-title-yellow text-gradient"&gt;latest&lt;/span&gt; &lt;span class="biyu-title-white"&gt;News&lt;/span&gt;`</p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Upcoming Events Section</legend>
+        <div class="form-group">
+          <label for="upcomingEventsTitle">Section Title</label>
+          <input type="text" id="upcomingEventsTitle" name="upcomingEventsTitle" value={getField('upcomingEventsTitle', 'UPCOMING EVENTS')} />
+           <p class="help-text">Use HTML for yellow text, e.g., `&lt;span class="text-white"&gt;UPCOMING&lt;/span&gt; &lt;span class="text-yellow-400"&gt;EVENTS&lt;/span&gt;`</p>
+        </div>
+        <div class="form-group">
+          <label for="noEventsTitle">'No Events' Title</label>
+          <input type="text" id="noEventsTitle" name="noEventsTitle" value={getField('noEventsTitle', 'Stay Tuned for Upcoming Events')} />
+        </div>
+        <div class="form-group">
+          <label for="noEventsText">'No Events' Text</label>
+          <textarea id="noEventsText" name="noEventsText">{getField('noEventsText', 'Check back soon for our next exciting boxing event!')}</textarea>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Box For Us Section</legend>
+        <div class="form-group">
+          <label for="boxForUsTitle">Section Title</label>
+          <input type="text" id="boxForUsTitle" name="boxForUsTitle" value={getField('boxForUsTitle', 'BOX FOR US')} />
+        </div>
+        <div class="form-group">
+          <label for="boxForUsText">Text</label>
+          <textarea id="boxForUsText" name="boxForUsText">{getField('boxForUsText', 'If you are a talented boxer seeking to carve out a career in the professional ranks then we want to hear from you.')}</textarea>
+        </div>
+        <div class="form-group">
+          <label>Background Image</label>
+          <MediaSelector inputName="boxForUsImage" inputId="boxForUsImage" mediaType="image" initialValue={getField('boxForUsImage')} />
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Company Info Section</legend>
+        <div class="form-group">
+          <label>Main Image</label>
+          <MediaSelector inputName="companyInfoImage" inputId="companyInfoImage" mediaType="image" initialValue={getField('companyInfoImage')} />
+        </div>
+        <div class="form-group">
+          <label>Logo</label>
+          <MediaSelector inputName="companyInfoLogo" inputId="companyInfoLogo" mediaType="image" initialValue={getField('companyInfoLogo')} />
+        </div>
+        <div class="form-group">
+          <label for="companyInfoParagraph1">Paragraph 1</label>
+          <textarea id="companyInfoParagraph1" name="companyInfoParagraph1">{getField('companyInfoParagraph1')}</textarea>
+        </div>
+        <div class="form-group">
+          <label for="companyInfoParagraph2">Paragraph 2</label>
+          <textarea id="companyInfoParagraph2" name="companyInfoParagraph2">{getField('companyInfoParagraph2')}</textarea>
+        </div>
+        <div class="form-group">
+          <label for="companyInfoParagraph3">Paragraph 3</label>
+          <textarea id="companyInfoParagraph3" name="companyInfoParagraph3">{getField('companyInfoParagraph3')}</textarea>
+        </div>
+      </fieldset>
+
+      <div class="form-group">
+        <button type="submit" class="btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</AdminLayout>

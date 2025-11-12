@@ -1,0 +1,180 @@
+---
+import AdminLayout from '../../components/admin/AdminLayout.astro';
+import { requireAdministrator } from '../../lib/auth-middleware.js';
+import { getAuditLogs } from '../../lib/security.js';
+
+// Require administrator role to view activity log
+const authRedirect = requireAdministrator(Astro);
+if (authRedirect) return authRedirect;
+
+// Get query parameters for filtering
+const url = new URL(Astro.request.url);
+const filterUser = url.searchParams.get('user') || null;
+const filterEntity = url.searchParams.get('entity') || null;
+const limit = parseInt(url.searchParams.get('limit') || '50');
+
+// Get audit logs
+const logs = getAuditLogs({
+  limit,
+  username: filterUser,
+  entityType: filterEntity
+});
+
+// Get unique usernames for filter dropdown
+const allLogs = getAuditLogs({ limit: 1000 });
+const uniqueUsers = [...new Set(allLogs.map(log => log.username))];
+const uniqueEntityTypes = [...new Set(allLogs.map(log => log.entity_type))];
+
+// Format action for display
+function formatAction(action) {
+  const actionColors = {
+    'LOGIN_SUCCESS': 'bg-green-500/10 text-green-600 border-green-500/30',
+    'LOGIN_FAILED': 'bg-red-500/10 text-red-600 border-red-500/30',
+    'LOGOUT': 'bg-gray-500/10 text-gray-600 border-gray-500/30',
+    'CREATE': 'bg-blue-500/10 text-blue-600 border-blue-500/30',
+    'UPDATE': 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30',
+    'DELETE': 'bg-red-500/10 text-red-600 border-red-500/30',
+    'ACCOUNT_LOCKED': 'bg-red-500/10 text-red-600 border-red-500/30',
+  };
+
+  return {
+    text: action.replace(/_/g, ' '),
+    className: actionColors[action] || 'bg-gray-500/10 text-gray-600 border-gray-500/30'
+  };
+}
+
+// Format timestamp
+function formatTimestamp(isoString) {
+  const date = new Date(isoString);
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+}
+---
+
+<AdminLayout pageTitle="Activity Log">
+
+  <!-- Filters -->
+  <div class="bg-card border border-border rounded-lg shadow-sm p-4 mb-6">
+    <form method="GET" class="flex flex-wrap gap-4 items-end">
+      <div class="flex-1 min-w-[200px]">
+        <label class="form-label">Filter by User</label>
+        <select name="user" class="form-select">
+          <option value="">All Users</option>
+          {uniqueUsers.map(user => (
+            <option value={user} selected={filterUser === user}>{user}</option>
+          ))}
+        </select>
+      </div>
+
+      <div class="flex-1 min-w-[200px]">
+        <label class="form-label">Filter by Entity</label>
+        <select name="entity" class="form-select">
+          <option value="">All Entities</option>
+          {uniqueEntityTypes.map(entity => (
+            <option value={entity} selected={filterEntity === entity}>{entity}</option>
+          ))}
+        </select>
+      </div>
+
+      <div class="min-w-[150px]">
+        <label class="form-label">Limit</label>
+        <select name="limit" class="form-select">
+          <option value="25" selected={limit === 25}>25</option>
+          <option value="50" selected={limit === 50}>50</option>
+          <option value="100" selected={limit === 100}>100</option>
+          <option value="250" selected={limit === 250}>250</option>
+        </select>
+      </div>
+
+      <div class="flex gap-2">
+        <button type="submit" class="btn btn-primary">Apply Filters</button>
+        <a href="/admin/activity-log" class="btn btn-secondary">Clear</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Activity Log Table -->
+  <div class="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
+    {logs.length > 0 ? (
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse">
+          <thead>
+            <tr class="bg-muted/50 border-b border-border">
+              <th class="px-4 py-3 text-left font-semibold text-foreground text-sm">Timestamp</th>
+              <th class="px-4 py-3 text-left font-semibold text-foreground text-sm">User</th>
+              <th class="px-4 py-3 text-left font-semibold text-foreground text-sm">Action</th>
+              <th class="px-4 py-3 text-left font-semibold text-foreground text-sm">Entity Type</th>
+              <th class="px-4 py-3 text-left font-semibold text-foreground text-sm">Entity ID</th>
+              <th class="px-4 py-3 text-left font-semibold text-foreground text-sm">IP Address</th>
+            </tr>
+          </thead>
+          <tbody>
+            {logs.map(log => {
+              const action = formatAction(log.action);
+              return (
+                <tr class="border-b border-border last:border-0 transition-colors hover:bg-muted/30">
+                  <td class="px-4 py-3 text-sm text-foreground whitespace-nowrap">
+                    {formatTimestamp(log.timestamp)}
+                  </td>
+                  <td class="px-4 py-3 text-sm">
+                    <span class="font-semibold text-foreground">{log.username}</span>
+                  </td>
+                  <td class="px-4 py-3 text-sm">
+                    <span class={`inline-block px-2 py-1 rounded text-xs font-medium border ${action.className}`}>
+                      {action.text}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-sm text-foreground">
+                    {log.entity_type || '-'}
+                  </td>
+                  <td class="px-4 py-3 text-sm text-muted-foreground font-mono text-xs">
+                    {log.entity_id ? log.entity_id.substring(0, 8) + '...' : '-'}
+                  </td>
+                  <td class="px-4 py-3 text-sm text-muted-foreground">
+                    {log.ip_address || '-'}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <div class="text-center py-12 text-muted-foreground">
+        <p>No activity logs found matching your filters.</p>
+      </div>
+    )}
+  </div>
+
+  <style>
+    .form-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--admin-text-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .form-select {
+      width: 100%;
+      padding: 0.5rem;
+      background-color: var(--admin-bg-tertiary);
+      border: 1px solid var(--admin-border-subtle);
+      border-radius: 0.375rem;
+      color: var(--admin-text-primary);
+      font-size: 0.875rem;
+    }
+
+    .form-select:focus {
+      outline: none;
+      border-color: var(--admin-accent-primary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+  </style>
+</AdminLayout>

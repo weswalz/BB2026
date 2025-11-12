@@ -1,0 +1,648 @@
+/* BiYu Promotions - Exact styling to match original */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+
+/* UNIFIED BUTTON STYLING - NEVER CHANGE THESE */
+.biyu-unified-btn {
+  background-color: #facc15 !important; /* yellow-400 */
+  color: #000000 !important; /* Always black text */
+  font-weight: 700 !important;
+  padding: 0.5rem 1.5rem !important;
+  border-radius: 0.375rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  transition: all 0.3s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: none !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+}
+
+.biyu-unified-btn:hover {
+  background-color: #eab308 !important; /* yellow-500 */
+  color: #000000 !important; /* ALWAYS BLACK - NEVER YELLOW */
+  transform: translateY(-2px) !important;
+}
+
+.biyu-unified-btn:active {
+  color: #000000 !important; /* ALWAYS BLACK - NEVER YELLOW */
+}
+
+.biyu-unified-btn:focus {
+  color: #000000 !important; /* ALWAYS BLACK - NEVER YELLOW */
+  outline: 2px solid #facc15 !important;
+  outline-offset: 2px !important;
+}
+
+:root {
+  /* Ensure biyu colors override any conflicts */
+  --biyu-yellow: #F7DF5B !important;
+  --biyu-black: #000000 !important;
+  --biyu-dark-gray: #1a1a1a !important;
+  --biyu-gray: #333333 !important;
+  --biyu-light-gray: #666666 !important;
+  --biyu-white: #ffffff !important;
+  
+  /* Ensure global.css variables are set correctly */
+  --color-gold-primary: #F7DF5B !important;
+  --color-gold-secondary: #F7DF5B !important;
+  --color-black-pure: #000000 !important;
+  --color-white-pure: #ffffff;
+}
+
+* {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+body {
+  background-color: var(--biyu-black) !important;
+  color: var(--biyu-white) !important;
+  margin: 0;
+  padding: 0;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.biyu-hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--biyu-black);
+  overflow: hidden;
+}
+
+.biyu-hero-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.biyu-hero-bg::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.65) 100%);
+  z-index: 1;
+}
+
+.biyu-hero-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.biyu-hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.65) 100%) !important;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.biyu-hero-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  color: var(--biyu-white);
+  max-width: 800px;
+  padding: 0 20px;
+}
+
+.biyu-hero-title {
+  font-size: 4rem;
+  font-weight: 900;
+  letter-spacing: 3px;
+  margin: 0 0 1rem 0;
+  text-transform: uppercase;
+  color: #FFFFFF !important;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.biyu-hero-subtitle {
+  font-size: 1.5rem;
+  font-weight: 400;
+  margin: 0;
+  letter-spacing: 1px;
+  color: #FFFFFF !important;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.biyu-hero-banner {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background-color: var(--biyu-black);
+}
+
+.biyu-hero-banner-bg {
+  width: 100%;
+  height: auto;
+}
+
+.biyu-hero-banner-bg img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.biyu-hero-text {
+  position: relative;
+  padding: 80px 20px;
+  background-color: var(--biyu-black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upcoming-events-section {
+  position: relative;
+  background-color: #000000;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 50px, rgba(247, 223, 91, 0.1) 50px, rgba(247, 223, 91, 0.1) 51px),
+    repeating-linear-gradient(60deg, transparent, transparent 50px, rgba(247, 223, 91, 0.1) 50px, rgba(247, 223, 91, 0.1) 51px),
+    repeating-linear-gradient(120deg, transparent, transparent 50px, rgba(247, 223, 91, 0.1) 50px, rgba(247, 223, 91, 0.1) 51px);
+  background-size: 100px 173px;
+}
+
+.biyu-section {
+  padding: 80px 20px;
+  max-width: none;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.biyu-section-full-width {
+  padding: 120px 0;
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  min-height: 60vh;
+}
+
+.biyu-section-dark {
+  background-color: var(--biyu-black);
+}
+
+.biyu-section-gray {
+  background-color: var(--biyu-dark-gray);
+}
+
+.biyu-title {
+  font-size: 3rem;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 3rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.biyu-title-yellow {
+  color: var(--biyu-yellow);
+}
+
+.biyu-title-white {
+  color: var(--biyu-white);
+}
+
+.biyu-title-events {
+  color: transparent;
+  -webkit-text-stroke: 2px var(--biyu-yellow);
+  text-stroke: 2px var(--biyu-yellow);
+}
+
+.biyu-news-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.biyu-news-image {
+  text-align: center;
+}
+
+.biyu-news-image img {
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+.biyu-news-content h3 {
+  color: var(--biyu-yellow);
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  line-height: 1.2;
+}
+
+.biyu-news-details {
+  margin-bottom: 2rem;
+}
+
+.biyu-news-details p {
+  margin: 0.5rem 0;
+  font-weight: 500;
+}
+
+.biyu-quote {
+  font-style: italic;
+  font-size: 1.1rem;
+  border-left: 4px solid var(--biyu-yellow);
+  padding-left: 1rem;
+  margin: 2rem 0;
+  color: #cccccc;
+}
+
+.biyu-btn {
+  background-color: var(--biyu-yellow);
+  color: var(--biyu-black);
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 1rem;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+}
+
+.biyu-btn:hover {
+  background-color: #E6C850;
+  color: var(--biyu-black);
+  transform: translateY(-2px);
+}
+
+.biyu-event-card {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 0;
+  padding: 3rem 2rem 2rem 2rem;
+  text-align: center;
+  margin: 2rem auto;
+  max-width: 1140px;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.biyu-event-date-badge {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  background-color: var(--biyu-yellow);
+  color: var(--biyu-black);
+  padding: 0.8rem 1.2rem;
+  border-radius: 0;
+  font-weight: 700;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
+.biyu-event-title {
+  color: var(--biyu-white);
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.biyu-event-description {
+  color: #cccccc;
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+  line-height: 1.5;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Updated Event Section Styles to Match Original */
+.biyu-events-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.biyu-box-layout {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 4rem;
+  align-items: center;
+  margin-top: 4rem;
+  width: 100%;
+  max-width: none;
+  padding: 0 2rem;
+}
+
+.biyu-box-main-image {
+  width: 100%;
+  justify-self: start;
+}
+
+.biyu-box-main-image img {
+  width: 100%;
+  height: 500px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.biyu-box-content-right {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  padding-left: 2rem;
+}
+
+.biyu-box-text {
+  text-align: left;
+  width: 100%;
+}
+
+.biyu-box-text p {
+  color: #cccccc;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.biyu-box-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  margin-top: 3rem;
+  text-align: left;
+}
+
+.biyu-box-content p {
+  color: #cccccc;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.biyu-box-images img {
+  border-radius: 8px;
+  max-width: 100%;
+  height: auto;
+}
+
+.biyu-form {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.biyu-form input {
+  width: 100%;
+  padding: 12px 16px;
+  margin-bottom: 1rem;
+  border: none;
+  border-radius: 4px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 1rem;
+}
+
+/* Background Section Styles */
+.biyu-brawl-section,
+.biyu-box-section {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--biyu-black);
+}
+
+.biyu-section-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.biyu-section-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.biyu-section-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1;
+}
+
+.biyu-section-content {
+  position: relative;
+  z-index: 2;
+}
+
+/* Enhanced styling for sections with backgrounds */
+.biyu-box-section .biyu-section-content,
+.biyu-brawl-section .biyu-section-content {
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(5px);
+}
+
+/* Make sure text is readable over backgrounds */
+.biyu-box-section .biyu-title,
+.biyu-brawl-section .biyu-title {
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.biyu-box-section .biyu-box-text p,
+.biyu-box-section p {
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* VIP Section Styles */
+.biyu-vip-section {
+  background-color: var(--biyu-black);
+  padding: 80px 0;
+  border-bottom: 1px solid #333;
+}
+
+.biyu-vip-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.biyu-vip-form-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.biyu-vip-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--biyu-white);
+  text-align: center;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.biyu-vip-subtitle {
+  color: var(--biyu-white);
+  text-align: center;
+  font-size: 1rem;
+  margin-bottom: 2rem;
+  letter-spacing: 0.5px;
+}
+
+.biyu-vip-form {
+  max-width: 400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.biyu-vip-input {
+  width: 100%;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border: none;
+  border-radius: 0;
+  background-color: var(--biyu-white);
+  color: var(--biyu-black);
+  font-family: 'Poppins', sans-serif;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.biyu-vip-input::placeholder {
+  color: #666;
+}
+
+.biyu-vip-submit {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.biyu-vip-image {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.biyu-boxer-silhouette {
+  max-width: 400px;
+  height: auto;
+  opacity: 0.8;
+  filter: contrast(1.2);
+}
+
+@media (max-width: 768px) {
+  .biyu-hero-banner {
+    height: 40vh;
+    min-height: 300px;
+    max-height: 500px;
+  }
+
+  .biyu-hero-text {
+    padding: 60px 20px;
+  }
+
+  .biyu-hero-title {
+    font-size: 2.5rem;
+    letter-spacing: 2px;
+  }
+
+  .biyu-hero-subtitle {
+    font-size: 1.2rem;
+  }
+  
+  .biyu-news-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .biyu-box-layout {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 0 1rem;
+  }
+  
+  .biyu-box-content-right {
+    padding-left: 0;
+    text-align: center;
+  }
+  
+  .biyu-box-main-image img {
+    height: 300px;
+  }
+  
+  .biyu-box-content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .biyu-title {
+    font-size: 2rem;
+  }
+  
+  .biyu-event-title {
+    font-size: 1.6rem;
+    margin-bottom: 1rem;
+  }
+  
+  .biyu-event-description {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .biyu-event-card {
+    max-width: 95%;
+    padding: 2.5rem 1.5rem 1.5rem 1.5rem;
+    margin: 1rem auto;
+  }
+  
+  .biyu-event-date-badge {
+    top: 1rem;
+    right: 1rem;
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .biyu-vip-content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    text-align: center;
+  }
+  
+  .biyu-vip-title {
+    font-size: 2rem;
+  }
+  
+  .biyu-boxer-silhouette {
+    max-width: 250px;
+  }
+}

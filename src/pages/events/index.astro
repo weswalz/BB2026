@@ -1,0 +1,151 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/sections/Header.astro';
+import Footer from '../../components/sections/Footer.astro';
+import BoxForUsSection from '../../components/sections/BoxForUsSection.astro';
+import { getPage } from '../../lib/pages.js';
+import { getUpcomingEvents } from '../../lib/events.js';
+
+export const prerender = false;
+
+const PAGE_ID = 'upcoming-events';
+const page = await getPage(PAGE_ID);
+const fields = page?.fields || {};
+const getField = (key, defaultValue = '') => fields[key] || defaultValue;
+
+// Fetch upcoming events
+let upcomingEvents = [];
+try {
+  upcomingEvents = await getUpcomingEvents();
+} catch (error) {
+  console.error('Error fetching upcoming events:', error);
+}
+
+// Format date function
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+}
+---
+
+<Layout 
+  title={getField('seoTitle', 'Upcoming Events - BiYu Promotions')} 
+  description={getField('seoDescription', "Don't miss BiYu Promotions' upcoming boxing events across the USA & beyond. Experience the action live—check out our fight schedule and get your tickets now!")}
+>
+  <Header />
+  
+  <main class="min-h-screen">
+    <!-- Hero Section with UPCOMING EVENTS -->
+    <section class="relative h-[70vh] min-h-[500px] flex items-center justify-center text-white overflow-hidden">
+      <div class="absolute inset-0 z-0">
+        <img 
+          src={getField('heroImage', '/images/upcomingeventshero.webp')} 
+          alt="Upcoming Boxing Events" 
+          class="w-full h-full object-cover"
+        />
+        <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-black/60 to-black/80"></div>
+      </div>
+      
+      <div class="relative z-10 container mx-auto px-4 text-center">
+        <h1 class="text-6xl md:text-8xl font-display font-black uppercase tracking-wider mb-6 hero-text">
+          {getField('heroTitle', 'UPCOMING EVENTS')}
+        </h1>
+      </div>
+    </section>
+
+    <!-- Events List or Coming Soon Message -->
+    <section class="py-20 bg-black text-white">
+      <div class="container mx-auto px-4">
+        {upcomingEvents.length > 0 ? (
+          <div class="space-y-20">
+            {upcomingEvents.map((event) => (
+              <div class="max-w-5xl mx-auto">
+                <div class="grid md:grid-cols-2 gap-8 items-center">
+                  <!-- Event Poster -->
+                  <div class="flex justify-center md:justify-end">
+                    <img
+                      src={event.image || '/images/placeholder-event.jpg'}
+                      alt={`${event.title} Event Poster`}
+                      class="w-full max-w-[400px] h-auto shadow-2xl rounded-lg"
+                      loading="lazy"
+                    />
+                  </div>
+
+                  <!-- Event Details -->
+                  <div class="text-center md:text-left">
+                    <div class="space-y-4">
+                      <h2 class="text-4xl md:text-5xl font-display font-black text-[#F7DF5B] uppercase">
+                        {event.title}
+                      </h2>
+                      {event.description && (
+                        <p class="text-base md:text-lg font-bold uppercase text-white/90">
+                          {event.description}
+                        </p>
+                      )}
+                      <div class="space-y-2 text-lg text-white/80">
+                        {event.city && event.country && (
+                          <p class="uppercase">{event.city}, {event.country}</p>
+                        )}
+                        <p class="uppercase font-semibold text-white">{formatDate(event.date)}</p>
+                        {event.venue && (
+                          <p class="uppercase">{event.venue}</p>
+                        )}
+                      </div>
+                      <div class="pt-4 flex flex-col sm:flex-row gap-3">
+                        <a
+                          href={`/events/${event.slug}/`}
+                          class="inline-block bg-transparent border-2 border-[#F7DF5B] text-[#F7DF5B] px-8 py-3 font-bold uppercase hover:bg-[#F7DF5B] hover:text-black transition-all duration-300 text-center"
+                        >
+                          Learn More
+                        </a>
+                        {event.ticketUrl ? (
+                          <a
+                            href={event.ticketUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="inline-block bg-[#F7DF5B] text-black px-8 py-3 font-bold uppercase hover:bg-white transition-all duration-300 transform hover:scale-105 text-center"
+                          >
+                            Get Tickets
+                          </a>
+                        ) : (
+                          <span class="inline-block bg-gray-600 text-white px-8 py-3 font-bold uppercase text-center">
+                            Tickets Coming Soon
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div class="max-w-4xl mx-auto text-center">
+            <div class="relative rounded-lg overflow-hidden shadow-2xl border border-yellow-400/20">
+              <div class="relative p-8 md:p-16 bg-gradient-to-r from-black to-gray-900">
+                <h2 class="text-3xl md:text-5xl font-extrabold uppercase text-white mb-6">
+                  Next Event Announcement Coming Soon
+                </h2>
+                <p class="text-lg md:text-xl text-white/80 mb-8 leading-relaxed">
+                  Stay tuned for our next exciting boxing event announcement! Follow us on social media for the latest updates.
+                </p>
+                <a href="/events/previous/" class="biyu-unified-btn">
+                  View Previous Events
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+    
+    <BoxForUsSection />
+    
+  </main>
+
+  <Footer />
+</Layout>

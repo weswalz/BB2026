@@ -1,0 +1,206 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/sections/Header.astro';
+import Footer from '../../components/sections/Footer.astro';
+import BoxForUsSection from '../../components/sections/BoxForUsSection.astro';
+import { getPage } from '../../lib/pages.js';
+
+export const prerender = false;
+
+const PAGE_ID = 'box-for-us';
+const page = await getPage(PAGE_ID);
+const fields = page?.fields || {};
+const getField = (key, defaultValue = '') => fields[key] || defaultValue;
+---
+
+<Layout
+  title={getField('seoTitle', 'Box for Us - BiYu Promotions | Professional Boxing Career')}
+  description={getField('seoDescription', 'Take your boxing career to the next level with BiYu Promotions. Professional management, world-class training facilities, and career development opportunities.')}
+>
+  <Header />
+
+  <main class="min-h-screen">
+    <!-- Hero Section -->
+    <section class="relative h-screen flex items-center justify-center text-white">
+      <div class="absolute inset-0 z-0">
+        <img
+          src={getField('heroImage', '/images/boxforushero.webp')}
+          alt="Box for BiYu Promotions"
+          class="w-full h-full object-cover"
+        />
+        <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70"></div>
+      </div>
+
+      <div class="relative z-10 container mx-auto px-4 text-center">
+        <h1 class="text-5xl md:text-7xl font-display font-bold mb-6 hero-text" set:html={getField('heroTitle', '<span class="text-[#FFD700]">BOX FOR US</span>')}>
+        </h1>
+        <p class="text-xl md:text-2xl mt-4 max-w-3xl mx-auto">
+          Join the BiYu Promotions family and take your boxing career to championship levels
+        </p>
+      </div>
+    </section>
+
+    <!-- Career Section -->
+    <section class="py-16 bg-black text-white">
+      <div class="container mx-auto px-4">
+        <div class="max-w-4xl mx-auto">
+          <h2 class="text-4xl font-display font-bold mb-8 text-[#FFD700]" set:html={getField('careerTitle', 'Are you looking to accelerate your professional boxing career?')}></h2>
+
+          <div class="space-y-6 text-lg leading-relaxed">
+            <p>{getField('careerParagraph1', 'If you are a talented boxer seeking to carve out a career in the professional ranks then we want to hear from you.')}</p>
+            <p>{getField('careerParagraph2', 'BiYu Promotions has an excellent track record for managing and promoting boxers – and providing a pathway to compete at the top levels of boxing.')}</p>
+            <p>{getField('careerParagraph3', 'We currently manage two world title contenders and a number of promising young boxers from the USA and the Dominican Republic, whose careers we are guiding.')}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Facilities Section -->
+    <section class="py-16 bg-gray-900 text-white">
+      <div class="container mx-auto px-4">
+        <div class="max-w-4xl mx-auto">
+          <h2 class="text-4xl font-display font-bold mb-8 text-[#FFD700]" set:html={getField('facilitiesTitle', 'World-Class Facilities')}></h2>
+
+          <div class="space-y-6 text-lg leading-relaxed">
+            <p>{getField('facilitiesParagraph1', 'BiYu Promotions provides you with everything you need to succeed, including access to the top trainers, matchmakers, its own Legions Training Complex in Houston, and living accommodation in Houston.')}</p>
+            <p>{getField('facilitiesParagraph2', 'BiYu Promotions also organises regular boxing events in Houston, Texas; the Dominican Republic and in South America to showcase your boxing talents.')}</p>
+            <p>{getField('facilitiesParagraph3', 'We provide consistent opportunities for you to enhance your professional career against reputable opponents.')}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Leadership Section -->
+    <section class="py-16 bg-black text-white">
+      <div class="container mx-auto px-4">
+        <div class="max-w-4xl mx-auto">
+          <h2 class="text-4xl font-display font-bold mb-8 text-[#FFD700]" set:html={getField('leadershipTitle', 'Experienced Leadership')}></h2>
+
+          <div class="space-y-6 text-lg leading-relaxed">
+            <p>{getField('leadershipParagraph1', 'The boxing operation is overseen by BiYu Promotions CEO Bobby Harrison and Rene Sanchez, who have more than 40 years boxing experience between them.')}</p>
+            <p>{getField('leadershipParagraph2', 'If you are a talented boxer looking for boxing promotion and management – we want to hear from you.')}</p>
+            <p>{getField('leadershipParagraph3', 'Please complete the contact form below, sharing key details about you and your career for consideration.')}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Application Form Section -->
+    <section class="py-16 bg-gray-900 text-white">
+      <div class="container mx-auto px-4">
+        <div class="max-w-2xl mx-auto">
+          <h2 class="text-4xl font-display font-bold text-center mb-4 text-[#FFD700]">
+            {getField('formTitle', 'Apply to Join BiYu Promotions')}
+          </h2>
+
+          <p class="text-lg text-center mb-12">
+            {getField('formSubtitle', 'Ready to take your boxing career to the next level? Fill out the form below and our team will be in touch.')}
+          </p>
+
+          <form id="application-form" class="space-y-6">
+            <div>
+              <label class="block text-sm font-bold mb-2">Name *</label>
+              <input type="text" id="name" name="name" class="w-full p-3 bg-white text-black" required />
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+              <div>
+                <label class="block text-sm font-bold mb-2">Age *</label>
+                <input type="number" id="age" name="age" class="w-full p-3 bg-white text-black" required />
+              </div>
+              <div>
+                <label class="block text-sm font-bold mb-2">Home town *</label>
+                <input type="text" id="homeTown" name="homeTown" class="w-full p-3 bg-white text-black" required />
+              </div>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+              <div>
+                <label class="block text-sm font-bold mb-2">Weight division *</label>
+                <input type="text" id="weightDivision" name="weightDivision" class="w-full p-3 bg-white text-black" required />
+              </div>
+              <div>
+                <label class="block text-sm font-bold mb-2">Email *</label>
+                <input type="email" id="email" name="email" class="w-full p-3 bg-white text-black" required />
+              </div>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+              <div>
+                <label class="block text-sm font-bold mb-2">Phone *</label>
+                <input type="tel" id="phone" name="phone" class="w-full p-3 bg-white text-black" required />
+              </div>
+              <div>
+                <label class="block text-sm font-bold mb-2">Social media links</label>
+                <input type="text" id="socialMedia" name="socialMedia" class="w-full p-3 bg-white text-black" />
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-bold mb-2">About You *</label>
+              <p class="text-sm text-gray-300 mb-2 italic">Please share your boxing history (amateur and pro careers), any significant titles and victories, you motivation for a professional boxing career and why you want to join BiYu Promotions</p>
+              <textarea id="aboutYou" name="aboutYou" class="w-full p-3 bg-white text-black h-32" required></textarea>
+            </div>
+            
+            <div class="text-center">
+              <button type="submit" id="submit-application-btn" class="bg-[#F7DF5B] text-black px-8 py-3 font-bold uppercase hover:bg-white transition-colors">
+                {getField('formSubmitButton', 'Submit Application')}
+              </button>
+            </div>
+            <div id="application-form-status" class="hidden text-center p-3 rounded"></div>
+          </form>
+        </div>
+      </div>
+    </section>
+    
+    <BoxForUsSection />
+    
+  </main>
+
+  <Footer />
+</Layout>
+
+<script>
+  document.getElementById('application-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const form = e.target as HTMLFormElement;
+    const submitBtn = document.getElementById('submit-application-btn') as HTMLButtonElement;
+    const statusDiv = document.getElementById('application-form-status') as HTMLDivElement;
+    
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+    statusDiv.classList.add('hidden');
+
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    
+    try {
+      const response = await fetch('/api/submit-application', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (response.ok) {
+        statusDiv.textContent = 'Application submitted successfully! We\'ll get back to you soon.';
+        statusDiv.className = 'text-green-600 text-center p-3 rounded bg-green-100';
+        statusDiv.classList.remove('hidden');
+        form.reset();
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to submit application');
+      }
+    } catch (error) {
+      statusDiv.textContent = `Error: ${error.message || 'Failed to submit application. Please try again.'}`;
+      statusDiv.className = 'text-red-500 text-center p-3 rounded bg-red-100';
+      statusDiv.classList.remove('hidden');
+      console.error('Form submission error:', error);
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit Application';
+    }
+  });
+</script>

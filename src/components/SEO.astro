@@ -1,0 +1,169 @@
+---
+export interface Props {
+  title: string;
+  description: string;
+  image?: string;
+  canonical?: string;
+  noindex?: boolean;
+  article?: {
+    publishedTime?: string;
+    modifiedTime?: string;
+    author?: string;
+    section?: string;
+    tags?: string[];
+  };
+  type?: 'website' | 'article' | 'profile';
+}
+
+const {
+  title,
+  description,
+  image = '/images/logos/logo-white.png',
+  canonical,
+  noindex = false,
+  article,
+  type = 'website'
+} = Astro.props;
+
+const siteUrl = 'https://biyuboxing.com';
+const currentUrl = canonical || `${siteUrl}${Astro.url.pathname}`;
+const imageUrl = image.startsWith('http') ? image : `${siteUrl}${image}`;
+
+// Structured data for organization
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "SportsOrganization",
+  "@id": `${siteUrl}/#organization`,
+  "name": "BiYu Promotions",
+  "alternateName": "BiYu Boxing",
+  "url": siteUrl,
+  "logo": `${siteUrl}/images/logos/logo-white.png`,
+  "description": "Professional boxing promotion company developing world-class fighters",
+  "founder": {
+    "@type": "Person",
+    "name": "Bobby Harrison"
+  },
+  "foundingDate": "2009",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Houston",
+    "addressRegion": "TX",
+    "addressCountry": "US"
+  },
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "telephone": "+1-346-268-1590",
+    "contactType": "customer service",
+    "email": "info@biyuboxing.com",
+    "availableLanguage": ["English", "Spanish"]
+  },
+  "sameAs": [
+    "https://twitter.com/biyuboxing",
+    "https://instagram.com/biyupromotions",
+    "https://facebook.com/biyuboxing"
+  ]
+};
+
+// Page-specific structured data
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": Astro.url.pathname.split('/').filter(Boolean).map((segment, index, array) => ({
+    "@type": "ListItem",
+    "position": index + 1,
+    "name": segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' '),
+    "item": `${siteUrl}/${array.slice(0, index + 1).join('/')}/`
+  }))
+};
+
+// Article schema if applicable
+const articleSchema = article ? {
+  "@context": "https://schema.org",
+  "@type": "NewsArticle",
+  "headline": title,
+  "description": description,
+  "image": imageUrl,
+  "datePublished": article.publishedTime,
+  "dateModified": article.modifiedTime || article.publishedTime,
+  "author": {
+    "@type": "Organization",
+    "name": "BiYu Promotions"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "BiYu Promotions",
+    "logo": {
+      "@type": "ImageObject",
+      "url": `${siteUrl}/images/logos/logo-white.png`
+    }
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": currentUrl
+  }
+} : null;
+---
+
+<!-- Primary Meta Tags -->
+<title>{title}</title>
+<meta name="title" content={title} />
+<meta name="description" content={description} />
+<link rel="canonical" href={currentUrl} />
+
+<!-- Preserve existing SEO equity -->
+<meta name="robots" content={noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'} />
+<meta name="googlebot" content={noindex ? 'noindex, follow' : 'index, follow'} />
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content={type} />
+<meta property="og:url" content={currentUrl} />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:image" content={imageUrl} />
+<meta property="og:image:alt" content={title} />
+<meta property="og:site_name" content="BiYu Promotions" />
+<meta property="og:locale" content="en_US" />
+
+<!-- Twitter -->
+<meta property="twitter:card" content="summary_large_image" />
+<meta property="twitter:url" content={currentUrl} />
+<meta property="twitter:title" content={title} />
+<meta property="twitter:description" content={description} />
+<meta property="twitter:image" content={imageUrl} />
+<meta property="twitter:site" content="@biyuboxing" />
+
+<!-- Article specific meta tags -->
+{article && (
+  <>
+    <meta property="article:published_time" content={article.publishedTime} />
+    {article.modifiedTime && <meta property="article:modified_time" content={article.modifiedTime} />}
+    {article.author && <meta property="article:author" content={article.author} />}
+    {article.section && <meta property="article:section" content={article.section} />}
+    {article.tags?.map(tag => <meta property="article:tag" content={tag} />)}
+  </>
+)}
+
+<!-- Performance hints -->
+<link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+<!-- Structured Data -->
+<script type="application/ld+json" set:html={JSON.stringify(organizationSchema)} />
+{Astro.url.pathname !== '/' && breadcrumbSchema.itemListElement.length > 0 && (
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+)}
+{articleSchema && (
+  <script type="application/ld+json" set:html={JSON.stringify(articleSchema)} />
+)}
+
+<!-- Additional SEO Tags -->
+<meta name="author" content="BiYu Promotions" />
+<meta name="publisher" content="BiYu Promotions" />
+<meta name="copyright" content="BiYu Promotions" />
+<meta name="language" content="English" />
+<meta name="revisit-after" content="7 days" />
+<meta name="category" content="Sports, Boxing, Professional Boxing" />
+<meta name="coverage" content="Worldwide" />
+<meta name="distribution" content="Global" />
+<meta name="rating" content="General" />

@@ -1,0 +1,109 @@
+---
+import AdminLayout from '../../../components/admin/AdminLayout.astro';
+import MediaSelector from '../../../components/admin/MediaSelector.astro';
+import { getGlobal, updateGlobal } from '../../../lib/globals.js';
+import { requireAdministrator } from '../../../lib/auth-middleware.js';
+import { verifySession } from '../../../lib/auth.js';
+import { verifyCSRFToken, logAudit, getClientIP } from '../../../lib/security.js';
+
+// Require administrator role for settings access
+const authRedirect = requireAdministrator(Astro);
+if (authRedirect) return authRedirect;
+
+// Get session data for CSRF token
+const sessionCookie = Astro.cookies.get('admin_session')?.value;
+const sessionData = verifySession(sessionCookie);
+
+const GLOBAL_ID = 'vip-signup';
+let message = null;
+
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  const csrfToken = formData.get('csrf_token');
+
+  // Verify CSRF token first
+  if (!verifyCSRFToken(sessionData, csrfToken)) {
+    message = { type: 'error', text: 'Invalid security token. Please refresh and try again.' };
+  } else {
+    const fields = Object.fromEntries(formData.entries());
+    const success = await updateGlobal(GLOBAL_ID, fields);
+
+    if (success) {
+      // Log audit event
+      const ipAddress = getClientIP(Astro.request);
+      logAudit({
+        username: sessionData.user.username,
+        action: 'UPDATE',
+        entityType: 'global',
+        entityId: GLOBAL_ID,
+        ipAddress
+      });
+    }
+
+    message = success ? { type: 'success', text: 'VIP Signup form content updated successfully!' } : { type: 'error', text: 'Failed to update content.' };
+  }
+}
+
+const global = await getGlobal(GLOBAL_ID);
+const fields = global?.fields || {};
+const getField = (key, defaultValue = '') => fields[key]?.value || defaultValue;
+---
+
+<AdminLayout pageTitle="Edit VIP Signup Form">
+  <style>
+    .form-container { max-width: 960px; margin: 0 auto; background: var(--admin-card-bg); padding: 2rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    fieldset { border: 1px solid var(--admin-border-color); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; }
+    legend { font-size: 1.25rem; font-weight: 600; padding: 0 0.5rem; color: var(--admin-text-primary); }
+    .form-group { margin-bottom: 1.5rem; }
+    label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--admin-text-secondary); }
+    input[type="text"], textarea { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--admin-border-color); border-radius: 4px; font-size: 1rem; background: var(--admin-input-bg); color: var(--admin-text-primary); }
+    textarea { min-height: 100px; }
+    .btn-primary { background: linear-gradient(135deg, #F7DF5B, #B8941F); color: #000; padding: 0.75rem 1.5rem; border: 1px solid #F7DF5B; border-radius: 4px; font-size: 1rem; cursor: pointer; font-weight: 600; }
+    .alert { padding: 1rem; border-radius: 4px; margin-bottom: 1rem; }
+    .alert-success { background: var(--admin-success-bg); color: var(--admin-success-text); }
+    .alert-error { background: var(--admin-error-bg); color: var(--admin-error-text); }
+  </style>
+
+  {message && <div class={`alert alert-${message.type}`}>{message.text}</div>}
+
+  <div class="form-container">
+    <form method="POST">
+      <input type="hidden" name="csrf_token" value={sessionData?.csrfToken} />
+      <fieldset>
+        <legend>VIP Signup Form Content</legend>
+        <div class="form-group">
+          <label for="title">Title</label>
+          <input type="text" id="title" name="title" value={getField('title', 'Join The VIP List')} />
+        </div>
+        <div class="form-group">
+          <label for="subtitle">Subtitle</label>
+          <input type="text" id="subtitle" name="subtitle" value={getField('subtitle', 'GET EVENTS, NEWS AND PROMOTIONS DELIVERED TO YOUR INBOX!')} />
+        </div>
+        <div class="form-group">
+          <label>Background Image</label>
+          <MediaSelector inputName="backgroundImage" inputId="backgroundImage" mediaType="image" initialValue={getField('backgroundImage')} />
+        </div>
+        <div class="form-group">
+          <label for="firstNamePlaceholder">First Name Placeholder</label>
+          <input type="text" id="firstNamePlaceholder" name="firstNamePlaceholder" value={getField('firstNamePlaceholder', 'First Name*')} />
+        </div>
+        <div class="form-group">
+          <label for="emailPlaceholder">Email Placeholder</label>
+          <input type="text" id="emailPlaceholder" name="emailPlaceholder" value={getField('emailPlaceholder', 'Your Email*')} />
+        </div>
+        <div class="form-group">
+          <label for="birthdayPlaceholder">Birthday Placeholder</label>
+          <input type="text" id="birthdayPlaceholder" name="birthdayPlaceholder" value={getField('birthdayPlaceholder', 'Birthday (MM / DD / YYYY)')} />
+        </div>
+        <div class="form-group">
+          <label for="submitButtonText">Submit Button Text</label>
+          <input type="text" id="submitButtonText" name="submitButtonText" value={getField('submitButtonText', 'Sign Up')} />
+        </div>
+      </fieldset>
+
+      <div class="form-group">
+        <button type="submit" class="btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</AdminLayout>

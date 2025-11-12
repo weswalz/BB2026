@@ -1,0 +1,342 @@
+/* Responsive Design Optimizations for All Breakpoints */
+/* Optimized for Core Web Vitals and Page Speed */
+
+/* ===== Mobile First Base Styles (0-639px) ===== */
+@media screen and (max-width: 639px) {
+  /* Typography optimization for mobile */
+  html {
+    font-size: 14px; /* Smaller base for mobile */
+  }
+  
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.75rem; }
+  h3 { font-size: 1.5rem; }
+  h4 { font-size: 1.25rem; }
+  
+  /* Container optimization */
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Hero sections mobile optimization */
+  .hero-text {
+    font-size: 2.5rem !important;
+    line-height: 1.2;
+  }
+  
+  /* Card layouts for mobile */
+  .combat-card {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+  
+  /* Navigation mobile optimization */
+  .navbar {
+    padding: 0.75rem 1rem;
+  }
+  
+  /* Image optimizations for mobile */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+  
+  /* Reduce animations on mobile for better performance */
+  * {
+    animation-duration: 0.3s !important;
+    transition-duration: 0.2s !important;
+  }
+  
+  /* Stack grid layouts on mobile */
+  .grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+  }
+  
+  /* Optimize forms for mobile */
+  .form-control input,
+  .form-control textarea,
+  .form-control select {
+    font-size: 16px; /* Prevent zoom on iOS */
+    padding: 0.75rem;
+  }
+  
+  /* Touch-friendly buttons */
+  .btn {
+    min-height: 48px;
+    padding: 0.75rem 1.5rem;
+  }
+}
+
+/* ===== Small Tablets (640px-767px) ===== */
+@media screen and (min-width: 640px) and (max-width: 767px) {
+  html {
+    font-size: 15px;
+  }
+  
+  .container {
+    max-width: 640px;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  
+  .hero-text {
+    font-size: 3rem !important;
+  }
+  
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+/* ===== Tablets (768px-1023px) ===== */
+@media screen and (min-width: 768px) and (max-width: 1023px) {
+  html {
+    font-size: 16px;
+  }
+  
+  .container {
+    max-width: 768px;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+  
+  .hero-text {
+    font-size: 3.5rem !important;
+  }
+  
+  /* Two column layouts for tablets */
+  .md\:grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  /* Optimize navigation for tablets */
+  .navbar {
+    padding: 1rem 2rem;
+  }
+}
+
+/* ===== Small Desktop (1024px-1279px) ===== */
+@media screen and (min-width: 1024px) and (max-width: 1279px) {
+  .container {
+    max-width: 1024px;
+  }
+  
+  .hero-text {
+    font-size: 4rem !important;
+  }
+  
+  /* Three column layouts for small desktop */
+  .lg\:grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+}
+
+/* ===== Desktop (1280px-1535px) ===== */
+@media screen and (min-width: 1280px) and (max-width: 1535px) {
+  .container {
+    max-width: 1280px;
+  }
+  
+  .hero-text {
+    font-size: 4.5rem !important;
+  }
+  
+  /* Four column layouts for desktop */
+  .xl\:grid-cols-4 {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+}
+
+/* ===== Wide Desktop (1536px+) ===== */
+@media screen and (min-width: 1536px) {
+  .container {
+    max-width: 1536px;
+  }
+  
+  .hero-text {
+    font-size: 5rem !important;
+  }
+  
+  /* Max content width for readability */
+  .prose {
+    max-width: 75ch;
+  }
+}
+
+/* ===== Ultra Wide (1920px+) ===== */
+@media screen and (min-width: 1920px) {
+  .container {
+    max-width: 1920px;
+  }
+  
+  /* Scale up for 4K displays */
+  html {
+    font-size: 18px;
+  }
+}
+
+/* ===== Performance Optimizations ===== */
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Network-aware quality adjustments */
+.reduced-quality img {
+  filter: blur(0.5px);
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+.reduced-quality video {
+  display: none;
+}
+
+.standard-quality img {
+  image-rendering: auto;
+}
+
+.high-quality img {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: high-quality;
+}
+
+/* Reduce animations on slow connections */
+.reduce-motion * {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* ===== Critical Layout Shift Prevention ===== */
+
+/* Reserve space for images */
+img {
+  aspect-ratio: attr(width) / attr(height);
+}
+
+/* Prevent layout shift from fonts */
+.font-display {
+  font-display: swap;
+}
+
+/* Fixed dimensions for common elements */
+.hero-section {
+  min-height: 50vh;
+  contain: layout;
+}
+
+.navbar {
+  height: 80px;
+  contain: layout;
+}
+
+.footer {
+  min-height: 300px;
+  contain: layout;
+}
+
+/* ===== Touch Device Optimizations ===== */
+@media (hover: none) and (pointer: coarse) {
+  /* Larger touch targets */
+  a, button, .btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Remove hover effects on touch devices */
+  a:hover,
+  button:hover {
+    background: inherit;
+    color: inherit;
+  }
+  
+  /* Optimize scrolling */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ===== Print Styles ===== */
+@media print {
+  /* Hide non-essential elements */
+  .navbar,
+  .footer,
+  .btn,
+  video,
+  iframe {
+    display: none !important;
+  }
+  
+  /* Optimize for printing */
+  body {
+    font-size: 12pt;
+    line-height: 1.5;
+    color: #000;
+    background: #fff;
+  }
+  
+  a {
+    text-decoration: underline;
+  }
+  
+  img {
+    max-width: 100% !important;
+  }
+}
+
+/* ===== Responsive Utilities ===== */
+
+/* Hide/show based on breakpoints */
+@media (max-width: 639px) {
+  .hide-mobile { display: none !important; }
+  .show-mobile { display: block !important; }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .hide-tablet { display: none !important; }
+  .show-tablet { display: block !important; }
+}
+
+@media (min-width: 1024px) {
+  .hide-desktop { display: none !important; }
+  .show-desktop { display: block !important; }
+}
+
+/* Responsive spacing utilities */
+@media (max-width: 639px) {
+  .p-responsive { padding: 1rem; }
+  .m-responsive { margin: 1rem; }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .p-responsive { padding: 1.5rem; }
+  .m-responsive { margin: 1.5rem; }
+}
+
+@media (min-width: 1024px) {
+  .p-responsive { padding: 2rem; }
+  .m-responsive { margin: 2rem; }
+}
+
+/* ===== Intersection Observer Loading States ===== */
+[data-loaded="false"] {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+[data-loaded="true"] {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}

@@ -1,0 +1,227 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/sections/Header.astro';
+import Footer from '../../components/sections/Footer.astro';
+import BoxForUsSection from '../../components/sections/BoxForUsSection.astro';
+import { getEventBySlug } from '../../lib/events.js';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+const event = await getEventBySlug(slug);
+
+if (!event) {
+  return Astro.redirect('/404');
+}
+
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
+
+const formatTime = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short'
+  });
+};
+---
+
+<Layout
+  title={`${event.title} - BiYu Promotions | Boxing Event`}
+  description={event.description || `${event.title} boxing event presented by BiYu Promotions`}
+>
+  <Header />
+
+  <main class="min-h-screen bg-black text-white">
+    <!-- Hero Section with Event Image -->
+    <section class="relative h-[70vh] min-h-[500px] flex items-center justify-center overflow-hidden">
+      <div class="absolute inset-0 z-0">
+        {event.image ? (
+          <img
+            src={event.image}
+            alt={event.title}
+            class="w-full h-full object-cover"
+          />
+        ) : (
+          <div class="w-full h-full bg-gradient-to-br from-gray-900 to-black"></div>
+        )}
+        <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-black/60 to-black"></div>
+      </div>
+
+      <div class="relative z-10 container mx-auto px-4 text-center">
+        <h1 class="text-5xl md:text-7xl font-display font-black uppercase tracking-wider mb-4 text-[#F7DF5B]">
+          {event.title}
+        </h1>
+        {(event.detailedDescription || event.description) && (
+          <p class="text-sm md:text-base text-white/90 max-w-3xl mx-auto mb-8">
+            {event.detailedDescription || event.description}
+          </p>
+        )}
+        <div class="flex flex-col md:flex-row gap-4 justify-center items-center text-xl">
+          <div class="flex items-center gap-2">
+            <svg class="w-6 h-6 text-[#F7DF5B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <span class="font-semibold">{formatDate(event.date)}</span>
+          </div>
+          {event.venue && (
+            <div class="flex items-center gap-2">
+              <svg class="w-6 h-6 text-[#F7DF5B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+              <span>{event.venue}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+
+    <!-- Event Details Section -->
+    <section class="py-16 bg-gradient-to-b from-black to-gray-900">
+      <div class="container mx-auto px-4 max-w-6xl">
+        <div class="grid md:grid-cols-2 gap-12 items-start">
+          <!-- Event Info -->
+          <div>
+            <h2 class="text-3xl font-display font-black uppercase mb-6 text-[#F7DF5B]">Event Details</h2>
+            <div class="space-y-4 text-lg">
+              <div class="flex items-start gap-3">
+                <svg class="w-6 h-6 text-[#F7DF5B] flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                <div>
+                  <p class="font-semibold text-white">Date</p>
+                  <p class="text-white/80">{formatDate(event.date)}</p>
+                </div>
+              </div>
+
+              {event.venue && (
+                <div class="flex items-start gap-3">
+                  <svg class="w-6 h-6 text-[#F7DF5B] flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                  </svg>
+                  <div>
+                    <p class="font-semibold text-white">Venue</p>
+                    <p class="text-white/80">{event.venue}</p>
+                  </div>
+                </div>
+              )}
+
+              {(event.city || event.country) && (
+                <div class="flex items-start gap-3">
+                  <svg class="w-6 h-6 text-[#F7DF5B] flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                  <div>
+                    <p class="font-semibold text-white">Location</p>
+                    <p class="text-white/80">{[event.city, event.country].filter(Boolean).join(', ')}</p>
+                  </div>
+                </div>
+              )}
+
+              <div class="flex items-start gap-3">
+                <svg class="w-6 h-6 text-[#F7DF5B] flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                  <p class="font-semibold text-white">Status</p>
+                  <p class="text-white/80 capitalize">{event.status}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="mt-8 flex flex-col sm:flex-row gap-4">
+              {event.ticketUrl ? (
+                <a
+                  href={event.ticketUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-block bg-[#F7DF5B] text-black px-8 py-4 font-bold uppercase text-center hover:bg-white transition-all duration-300 transform hover:scale-105 shadow-lg"
+                >
+                  Get Tickets
+                </a>
+              ) : event.status === 'upcoming' ? (
+                <span class="inline-block bg-gray-600 text-white px-8 py-4 font-bold uppercase text-center">
+                  Tickets Coming Soon
+                </span>
+              ) : null}
+              <a
+                href="/contact-us/"
+                class="inline-block bg-transparent border-2 border-[#F7DF5B] text-[#F7DF5B] px-8 py-4 font-bold uppercase text-center hover:bg-[#F7DF5B] hover:text-black transition-all duration-300"
+              >
+                Contact Us
+              </a>
+            </div>
+          </div>
+
+          <!-- Event Poster -->
+          {event.image && (
+            <div class="flex justify-center">
+              <img
+                src={event.image}
+                alt={`${event.title} Event Poster`}
+                class="w-full max-w-md h-auto shadow-2xl rounded-lg"
+              />
+            </div>
+          )}
+        </div>
+
+        <!-- Fight Card (if available) -->
+        {event.fights && event.fights.length > 0 && (
+          <div class="mt-16">
+            <h2 class="text-3xl font-display font-black uppercase mb-8 text-[#F7DF5B] text-center">Fight Card</h2>
+            <div class="space-y-6">
+              {event.fights.map((fight) => (
+                <div class="bg-[#1a1a1a] p-6 rounded-lg border border-[#F7DF5B]/20">
+                  <div class="flex items-center justify-between flex-wrap gap-4">
+                    <div class="text-center flex-1">
+                      <p class="text-2xl font-bold text-white">{fight.fighter1}</p>
+                    </div>
+                    <div class="text-center px-6">
+                      <p class="text-[#F7DF5B] font-black text-xl">VS</p>
+                      {fight.weightClass && (
+                        <p class="text-sm text-white/60 mt-1">{fight.weightClass}</p>
+                      )}
+                    </div>
+                    <div class="text-center flex-1">
+                      <p class="text-2xl font-bold text-white">{fight.fighter2}</p>
+                    </div>
+                  </div>
+                  {fight.isMainEvent && (
+                    <div class="mt-4 text-center">
+                      <span class="bg-[#F7DF5B] text-black px-4 py-1 text-sm font-bold uppercase">Main Event</span>
+                    </div>
+                  )}
+                  {fight.result && (
+                    <div class="mt-4 text-center text-white/80">
+                      <p class="text-sm uppercase">Result: {fight.result}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+
+    <BoxForUsSection />
+  </main>
+
+  <Footer />
+</Layout>
+
+<style>
+  .hero-text {
+    text-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+  }
+</style>

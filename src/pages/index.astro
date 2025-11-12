@@ -1,0 +1,137 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/sections/Header.astro';
+import Footer from '../components/sections/Footer.astro';
+import UpcomingEvent from '../components/sections/UpcomingEvent.astro';
+import BoxForUsSection from '../components/sections/BoxForUsSection.astro';
+import { getAllNews } from '../lib/database.js';
+import { getPage } from '../lib/pages.js';
+
+export const prerender = false;
+
+const page = await getPage('home');
+const fields = page?.fields || {};
+const getField = (key, defaultValue = '') => fields[key]?.value || fields[key] || defaultValue;
+
+// Fetch latest news from MongoDB
+let latestNewsArticle = null;
+try {
+  const allNews = await getAllNews();
+  const publishedNews = allNews.filter(article => article.published);
+  latestNewsArticle = publishedNews.length > 0 ? publishedNews[0] : null;
+} catch (error) {
+  console.error('Error fetching news for home page:', error);
+}
+---
+
+<Layout 
+  title="BiYu Promotions - Boxing Promotions in Houston, Texas"
+  description="Fighting For Legacy, Driven by Culture. Professional boxing promotion company based in Houston with operations in Tampa and Santo Domingo."
+>
+  <Header />
+  
+  <main>
+    <!-- Hero Section -->
+    <section class="biyu-hero-banner">
+      <div class="biyu-hero-banner-bg">
+        <img
+          src={getField('heroImage', '/images/biyoubrawl3banner.jpg')}
+          alt="BiYou Brawl 3"
+          loading="eager"
+        />
+      </div>
+    </section>
+
+    <!-- Hero Text Section -->
+    <section class="biyu-hero-text">
+      <div class="biyu-hero-content animate-fade-in-up">
+        <h1 class="biyu-hero-title animate-slide-down">
+          {getField('heroTitle', 'BIYU PROMOTIONS')}
+        </h1>
+
+        <p class="biyu-hero-subtitle animate-slide-up">
+          {getField('heroSubtitle', 'Fighting For Legacy, Driven by Culture')}
+        </p>
+      </div>
+    </section>
+
+    <!-- Upcoming Events Section -->
+    <UpcomingEvent />
+
+    <!-- Latest News Section -->
+    {latestNewsArticle && (
+      <section class="biyu-section biyu-section-dark">
+        <h2 class="biyu-title text-center animate-on-scroll" set:html={getField('latestNewsTitle', '<span class="biyu-title-yellow text-gradient">latest</span> <span class="biyu-title-white">News</span>')}></h2>
+        
+        <div class="biyu-news-grid glass-effect animate-on-scroll">
+          <div class="biyu-news-image animate-on-scroll">
+            <img
+              src={latestNewsArticle.featuredImage || '/images/newshero.webp'}
+              alt={latestNewsArticle.title}
+            />
+          </div>
+          
+          <div class="biyu-news-content stagger-children animate-on-scroll">
+            <h3>{latestNewsArticle.title}</h3>
+            
+            <p class="mb-4" set:html={latestNewsArticle.excerpt}></p>
+            
+            <div class="text-center mt-8">
+              <a href={`/news/${latestNewsArticle.slug}`} class="biyu-btn animate-bounce-in">
+                Read More
+              </a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="text-center mt-8">
+          <a href="/news/" class="biyu-btn animate-bounce-in">
+            See All News
+          </a>
+        </div>
+      </section>
+    )}
+
+    <!-- Box for Us Section -->
+    <BoxForUsSection />
+    
+    <!-- BiYu Company Information Section -->
+    <section class="biyu-section biyu-section-dark">
+      <div class="biyu-box-layout">
+        <div class="biyu-box-main-image">
+          <img 
+            src={getField('companyInfoImage', '/images/home/gloves-hero.png')}
+            alt="BiYu Boxing Gloves" 
+            class="w-full rounded-lg"
+          />
+        </div>
+        
+        <div class="biyu-box-content-right">
+          <div class="text-center mb-6">
+            <img 
+              src={getField('companyInfoLogo', '/images/logos/logo-white.png')}
+              alt="BiYu Promotions Logo" 
+              class="mx-auto max-w-xs mb-6"
+            />
+          </div>
+          
+          <div class="biyu-box-text">
+            <p class="mb-4">
+              {getField('companyInfoParagraph1')}
+            </p>
+            
+            <p class="mb-4">
+              {getField('companyInfoParagraph2')}
+            </p>
+            
+            <p>
+              {getField('companyInfoParagraph3')}
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  
+  <Footer />
+</Layout>

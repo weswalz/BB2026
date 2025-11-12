@@ -1,0 +1,101 @@
+---
+// Error boundary component for graceful error handling
+export interface Props {
+  fallback?: string;
+  showDetails?: boolean;
+}
+
+const { 
+  fallback = "Something went wrong. Please try refreshing the page.",
+  showDetails = false
+} = Astro.props;
+---
+
+<div class="error-boundary min-h-64 flex items-center justify-center p-8">
+  <div class="combat-card rounded-lg p-8 max-w-md mx-auto text-center">
+    <!-- Error Icon -->
+    <div class="w-16 h-16 bg-error/20 rounded-full flex items-center justify-center mx-auto mb-6">
+      <svg class="w-8 h-8 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+      </svg>
+    </div>
+    
+    <!-- Error Message -->
+    <h3 class="text-xl font-display font-bold mb-4 text-error">
+      Oops! Something Went Wrong
+    </h3>
+    
+    <p class="text-base-content/80 mb-6">
+      {fallback}
+    </p>
+    
+    <!-- Actions -->
+    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+      <button 
+        onclick="window.location.reload()"
+        class="btn btn-primary font-display font-semibold"
+      >
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0V9a8 8 0 1115.356 2M15 15v3a1 1 0 01-1 1H6a1 1 0 01-1-1v-3"/>
+        </svg>
+        Refresh Page
+      </button>
+      
+      <a 
+        href="/"
+        class="btn btn-outline font-display font-semibold"
+      >
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        Go Home
+      </a>
+    </div>
+    
+    <!-- Technical Details (Development Only) -->
+    {showDetails && (
+      <details class="mt-6 text-left">
+        <summary class="cursor-pointer text-sm text-primary font-semibold">Technical Details</summary>
+        <div class="mt-4 p-4 bg-base-200 rounded-lg text-xs font-mono">
+          <slot />
+        </div>
+      </details>
+    )}
+  </div>
+</div>
+
+<style>
+  .error-boundary {
+    background: 
+      radial-gradient(circle at 20% 80%, rgba(239, 68, 68, 0.1) 0%, transparent 50%),
+      linear-gradient(135deg, var(--black-pure) 0%, var(--black-medium) 50%, var(--black-pure) 100%);
+  }
+</style>
+
+<script>
+  // Enhanced error reporting for development
+  if (import.meta.env.DEV) {
+    window.addEventListener('error', (event) => {
+      console.error('Uncaught error:', event.error);
+    });
+    
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error('Unhandled promise rejection:', event.reason);
+    });
+  }
+  
+  // Performance monitoring for errors
+  if ('PerformanceObserver' in window) {
+    const observer = new PerformanceObserver((list) => {
+      list.getEntries().forEach((entry) => {
+        if (entry.entryType === 'navigation' && entry.type === 'navigate') {
+          if (entry.loadEventEnd - entry.loadEventStart > 3000) {
+            console.warn('Slow page load detected:', entry.loadEventEnd - entry.loadEventStart + 'ms');
+          }
+        }
+      });
+    });
+    
+    observer.observe({ entryTypes: ['navigation'] });
+  }
+</script>

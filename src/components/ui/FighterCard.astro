@@ -1,0 +1,46 @@
+---
+export interface Props {
+  name: string;
+  record?: string;
+  weightClass?: string;
+  image?: string;
+}
+
+const { 
+  name, 
+  record,
+  weightClass,
+  image = '/images/fighter-placeholder.jpg'
+} = Astro.props;
+---
+
+<article class="combat-card rounded-lg overflow-hidden transition-all duration-300 group">
+  <div class="aspect-[3/4] bg-neutral-focus relative overflow-hidden">
+    <img 
+      src={image} 
+      alt={name}
+      class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+      loading="lazy"
+    />
+    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+    
+    <div class="absolute bottom-0 left-0 right-0 p-6">
+      <h3 class="text-2xl champion-title text-white mb-1 group-hover:text-primary transition-colors boxing-glow">
+        {name}
+      </h3>
+      
+      <div class="flex flex-wrap gap-2 text-sm text-white/95">
+        {record && (
+          <span class="bg-black/60 px-3 py-1 rounded-full font-semibold backdrop-blur-sm">
+            {record}
+          </span>
+        )}
+        {weightClass && (
+          <span class="bg-primary/20 text-primary px-3 py-1 rounded-full font-semibold backdrop-blur-sm">
+            {weightClass}
+          </span>
+        )}
+      </div>
+    </div>
+  </div>
+</article>

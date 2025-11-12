@@ -1,0 +1,99 @@
+---
+const getField = (key, defaultValue = '') => defaultValue;
+---
+<!-- Join VIP List Section -->
+<section class="relative py-12 md:py-16 lg:py-20 text-white">
+  <div class="absolute inset-0 z-0">
+    <img 
+      src={getField('backgroundImage', '/images/jointheviplist.webp')} 
+      alt="Join VIP List Background" 
+      class="w-full h-full object-cover"
+    />
+    <div class="absolute inset-0 bg-black/60"></div>
+  </div>
+  
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+    <div class="max-w-lg mx-auto text-center">
+      <h2 class="text-3xl sm:text-3xl md:text-4xl font-display font-bold mb-3 sm:mb-4 text-[#FFD700]">{getField('title', 'Join The VIP List')}</h2>
+      <p class="text-sm sm:text-base md:text-lg mb-6 sm:mb-8 px-4">{getField('subtitle', 'GET EVENTS, NEWS AND PROMOTIONS DELIVERED TO YOUR INBOX!')}</p>
+      
+      <form id="vip-signup-form" class="space-y-3 sm:space-y-4">
+        <input 
+          type="text" 
+          id="vipFirstName"
+          name="firstName"
+          placeholder={getField('firstNamePlaceholder', 'First Name*')} 
+          class="w-full p-2.5 sm:p-3 bg-white text-black text-sm sm:text-base rounded"
+          required
+        />
+        <input 
+          type="email" 
+          id="vipEmail"
+          name="email"
+          placeholder={getField('emailPlaceholder', 'Your Email*')} 
+          class="w-full p-2.5 sm:p-3 bg-white text-black text-sm sm:text-base rounded"
+          required
+        />
+        <input 
+          type="text" 
+          id="vipBirthday"
+          name="birthday"
+          placeholder={getField('birthdayPlaceholder', 'Birthday (MM / DD / YYYY)')} 
+          class="w-full p-2.5 sm:p-3 bg-white text-black text-sm sm:text-base rounded"
+        />
+        <button 
+          type="submit" 
+          id="vip-signup-btn"
+          class="biyu-unified-btn w-full"
+        >
+          {getField('submitButtonText', 'Sign Up')}
+        </button>
+        <div id="vip-signup-status" class="hidden text-center p-3 rounded"></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<script>
+  document.getElementById('vip-signup-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const form = e.target as HTMLFormElement;
+    const submitBtn = document.getElementById('vip-signup-btn') as HTMLButtonElement;
+    const statusDiv = document.getElementById('vip-signup-status') as HTMLDivElement;
+    
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Signing Up...';
+    statusDiv.classList.add('hidden');
+
+    const formData = new FormData(form);
+
+    try {
+      const response = await fetch('/api/vip-signup', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (response.ok) {
+        statusDiv.textContent = 'Successfully signed up for VIP list!';
+        statusDiv.className = 'text-green-600 text-center p-3 rounded bg-green-100';
+        statusDiv.classList.remove('hidden');
+        form.reset();
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to sign up for VIP list');
+      }
+    } catch (error) {
+      statusDiv.textContent = `Error: ${error.message || 'Failed to sign up. Please try again.'}`;
+      statusDiv.className = 'text-red-500 text-center p-3 rounded bg-red-100';
+      statusDiv.classList.remove('hidden');
+      console.error('Form submission error:', error);
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Sign Up';
+    }
+  });
+</script>
+    </div>
+  </div>
+</section>

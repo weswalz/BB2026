@@ -1,0 +1,174 @@
+---
+export interface Props {
+  src: string;
+  alt: string;
+  class?: string;
+  loading?: 'lazy' | 'eager';
+  sizes?: string;
+  widths?: number[];
+  quality?: number;
+  format?: 'webp' | 'avif' | 'auto';
+  placeholder?: 'blur' | 'none';
+  fetchpriority?: 'high' | 'low' | 'auto';
+}
+
+const {
+  src,
+  alt,
+  class: className = '',
+  loading = 'lazy',
+  sizes = '100vw',
+  widths = [320, 640, 768, 1024, 1280, 1536, 1920],
+  quality = 85,
+  format = 'webp',
+  placeholder = 'blur',
+  fetchpriority = 'auto'
+} = Astro.props;
+
+// Generate responsive image sources
+const generateSrcSet = () => {
+  // For now, return the original image
+  // In production, this would generate multiple image sizes
+  return src;
+};
+
+// Generate placeholder for blur effect
+const placeholderStyle = placeholder === 'blur' ? {
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Cfilter id='b' color-interpolation-filters='sRGB'%3E%3CfeGaussianBlur stdDeviation='20'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23b)'/%3E%3C/svg%3E")`,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center'
+} : {};
+
+// Determine if image should be prioritized
+const isAboveFold = fetchpriority === 'high' || loading === 'eager';
+---
+
+<picture class={`responsive-image-wrapper ${className}`}>
+  <!-- WebP format for modern browsers -->
+  <source
+    type="image/webp"
+    srcset={src}
+    sizes={sizes}
+  />
+  
+  <!-- Fallback to original format -->
+  <img
+    src={src}
+    alt={alt}
+    class={`responsive-image ${className}`}
+    loading={loading}
+    decoding={isAboveFold ? 'sync' : 'async'}
+    fetchpriority={fetchpriority}
+    sizes={sizes}
+    style={placeholderStyle}
+    onload="this.style.backgroundImage='none'"
+  />
+</picture>
+
+<style>
+  .responsive-image-wrapper {
+    display: block;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .responsive-image {
+    display: block;
+    width: 100%;
+    height: auto;
+    transition: opacity 0.3s ease-in-out;
+  }
+  
+  /* Optimize for different viewport sizes */
+  @media (max-width: 640px) {
+    .responsive-image {
+      font-size: 12px; /* Fallback text size */
+    }
+  }
+  
+  @media (min-width: 641px) and (max-width: 1024px) {
+    .responsive-image {
+      font-size: 14px;
+    }
+  }
+  
+  /* Intersection Observer for lazy loading enhancement */
+  .responsive-image[data-loaded="false"] {
+    opacity: 0;
+  }
+  
+  .responsive-image[data-loaded="true"] {
+    opacity: 1;
+  }
+</style>
+
+<script>
+  // Enhance lazy loading with Intersection Observer
+  if ('IntersectionObserver' in window) {
+    const images = document.querySelectorAll('.responsive-image[loading="lazy"]');
+    
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target as HTMLImageElement;
+          img.setAttribute('data-loaded', 'true');
+          observer.unobserve(img);
+        }
+      });
+    }, {
+      rootMargin: '50px 0px', // Start loading 50px before entering viewport
+      threshold: 0.01
+    });
+    
+    images.forEach(img => {
+      img.setAttribute('data-loaded', 'false');
+      imageObserver.observe(img);
+    });
+  }
+  
+  // Responsive image sizing based on viewport
+  function optimizeImageSizes() {
+    const viewportWidth = window.innerWidth;
+    const images = document.querySelectorAll('.responsive-image');
+    
+    images.forEach(img => {
+      const imgElement = img as HTMLImageElement;
+      
+      // Adjust image quality based on connection speed
+      if ('connection' in navigator) {
+        const connection = (navigator as any).connection;
+        if (connection && connection.effectiveType) {
+          switch(connection.effectiveType) {
+            case 'slow-2g':
+            case '2g':
+              imgElement.style.filter = 'blur(0.5px)'; // Slightly reduce quality perception
+              break;
+            case '3g':
+              imgElement.style.filter = 'none';
+              break;
+            case '4g':
+            default:
+              imgElement.style.filter = 'none';
+          }
+        }
+      }
+    });
+  }
+  
+  // Run on load and resize
+  window.addEventListener('load', optimizeImageSizes);
+  window.addEventListener('resize', debounce(optimizeImageSizes, 250));
+  
+  // Debounce helper
+  function debounce(func: Function, wait: number) {
+    let timeout: NodeJS.Timeout;
+    return function executedFunction(...args: any[]) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+</script>

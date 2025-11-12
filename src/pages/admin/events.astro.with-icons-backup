@@ -1,0 +1,496 @@
+---
+import AdminLayout from '../../components/admin/AdminLayout.astro';
+import { getAllEvents, deleteEvent } from '../../lib/events.js';
+// TEMP: Icons disabled for testing
+// import { Calendar, MapPin, Edit, Trash2, Plus, Filter } from 'lucide-react';
+
+// Handle delete action
+let deleteMessage = null;
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  const action = formData.get('action');
+  const eventId = formData.get('eventId');
+
+  if (action === 'delete' && eventId) {
+    try {
+      const deleted = await deleteEvent(eventId);
+      deleteMessage = deleted
+        ? { type: 'success', text: 'Event deleted successfully!' }
+        : { type: 'error', text: 'Failed to delete event.' };
+    } catch (error) {
+      deleteMessage = { type: 'error', text: 'Error deleting event.' };
+    }
+  }
+}
+
+// Get filter from query params
+const url = new URL(Astro.request.url);
+const filter = url.searchParams.get('filter') || 'all';
+
+// Build query based on filter
+let query = {};
+if (filter === 'upcoming') query.status = 'upcoming';
+if (filter === 'past') query.status = 'past';
+if (filter === 'featured') query.featured = true;
+
+// Get all events
+const events = await getAllEvents(query);
+
+// Calculate stats
+const upcomingCount = events.filter(e => e.status === 'upcoming').length;
+const pastCount = events.filter(e => e.status === 'past').length;
+const featuredCount = events.filter(e => e.featured).length;
+
+// Format date helper
+function formatDate(date) {
+  if (!date) return 'N/A';
+  return new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+}
+---
+
+<AdminLayout pageTitle="Events">
+  <div slot="header-actions">
+    <a href="/admin/events/new" class="btn-primary">
+      {/* <Plus class="w-4 h-4" /> */}
+      Add New Event
+    </a>
+  </div>
+
+  <style>
+    /* Stats Section */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      background: var(--admin-bg-secondary);
+      border: 1px solid var(--admin-border-subtle);
+      border-radius: 8px;
+      padding: 1.25rem;
+      color: white;
+    }
+
+    .stat-label {
+      font-size: 0.875rem;
+      color: var(--admin-text-secondary);
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: white;
+    }
+
+    /* Filters */
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background: var(--admin-bg-secondary);
+      border: 1px solid var(--admin-border-subtle);
+      border-radius: 8px;
+    }
+
+    .filter-btn {
+      padding: 0.5rem 1rem;
+      background: var(--admin-bg-tertiary);
+      border: 1px solid var(--admin-border-default);
+      border-radius: 6px;
+      text-decoration: none;
+      color: var(--admin-text-primary);
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .filter-btn:hover {
+      background: var(--admin-border-default);
+      border-color: #64748b;
+    }
+
+    .filter-btn.active {
+      background: #3b82f6;
+      color: white;
+      border-color: #3b82f6;
+    }
+
+    /* Table Container */
+    .events-table {
+      background: var(--admin-bg-secondary);
+      border: 1px solid var(--admin-border-subtle);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      background: var(--admin-bg-primary);
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--admin-text-primary);
+      border-bottom: 1px solid var(--admin-border-subtle);
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    td {
+      padding: 1rem;
+      border-bottom: 1px solid var(--admin-border-subtle);
+      color: var(--admin-text-primary);
+    }
+
+    tbody tr {
+      transition: background-color 0.2s;
+    }
+
+    tbody tr:hover {
+      background: var(--admin-bg-tertiary);
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Event Image */
+    .event-image {
+      width: 60px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid var(--admin-border-default);
+    }
+
+    /* Event Title */
+    .event-title {
+      font-weight: 600;
+      color: #f1f5f9;
+      margin-bottom: 0.25rem;
+    }
+
+    .event-description {
+      font-size: 0.875rem;
+      color: var(--admin-text-secondary);
+    }
+
+    /* Status Badges */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+    }
+
+    .status-upcoming {
+      background: rgba(34, 197, 94, 0.1);
+      color: #4ade80;
+      border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    .status-past {
+      background: rgba(239, 68, 68, 0.1);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .featured-badge {
+      background: rgba(251, 191, 36, 0.1);
+      color: #fbbf24;
+      border: 1px solid rgba(251, 191, 36, 0.2);
+    }
+
+    /* Location */
+    .location {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      color: var(--admin-text-secondary);
+    }
+
+    .location-icon {
+      flex-shrink: 0;
+      margin-top: 2px;
+      color: var(--admin-text-secondary);
+    }
+
+    .location-text {
+      font-size: 0.875rem;
+    }
+
+    .venue {
+      color: var(--admin-text-primary);
+      font-weight: 500;
+    }
+
+    .placeholder-icon {
+      color: #64748b;
+    }
+
+    /* Actions */
+    .actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .btn-sm {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      border-radius: 6px;
+      text-decoration: none;
+      border: none;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .btn-edit {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .btn-edit:hover {
+      background: #2563eb;
+    }
+
+    .btn-delete {
+      background: #ef4444;
+      color: white;
+    }
+
+    .btn-delete:hover {
+      background: #dc2626;
+    }
+
+    /* Alerts */
+    .alert {
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 500;
+    }
+
+    .alert-success {
+      background: rgba(34, 197, 94, 0.1);
+      color: #4ade80;
+      border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    .alert-error {
+      background: rgba(239, 68, 68, 0.1);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--admin-text-secondary);
+    }
+
+    .empty-state h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--admin-text-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .empty-state p {
+      margin-bottom: 1.5rem;
+    }
+
+    .btn-primary {
+      background: #3b82f6;
+      color: white;
+      padding: 0.75rem 1.25rem;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background-color 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: #2563eb;
+    }
+
+    @media (max-width: 768px) {
+      th:nth-child(3), td:nth-child(3),
+      th:nth-child(4), td:nth-child(4) {
+        display: none;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+
+  {deleteMessage && (
+    <div class={`alert alert-${deleteMessage.type}`}>
+      {deleteMessage.text}
+    </div>
+  )}
+
+  <!-- Statistics -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-label">Total Events</div>
+      <div class="stat-value">{events.length}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Upcoming</div>
+      <div class="stat-value">{upcomingCount}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Past</div>
+      <div class="stat-value">{pastCount}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Featured</div>
+      <div class="stat-value">{featuredCount}</div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <a href="/admin/events" class={`filter-btn ${filter === 'all' ? 'active' : ''}`}>
+      <Filter class="w-4 h-4" />
+      All Events
+    </a>
+    <a href="/admin/events?filter=upcoming" class={`filter-btn ${filter === 'upcoming' ? 'active' : ''}`}>
+      <Calendar class="w-4 h-4" />
+      Upcoming
+    </a>
+    <a href="/admin/events?filter=past" class={`filter-btn ${filter === 'past' ? 'active' : ''}`}>
+      <Calendar class="w-4 h-4" />
+      Past
+    </a>
+    <a href="/admin/events?filter=featured" class={`filter-btn ${filter === 'featured' ? 'active' : ''}`}>
+      Featured
+    </a>
+  </div>
+
+  <!-- Events Table -->
+  <div class="events-table">
+    {events.length > 0 ? (
+      <table>
+        <thead>
+          <tr>
+            <th>Image</th>
+            <th>Event Details</th>
+            <th>Date</th>
+            <th>Location</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {events.map(event => (
+            <tr>
+              <td>
+                {event.image ? (
+                  <img src={event.image} alt={event.title} class="event-image" />
+                ) : (
+                  <div class="event-image" style="background: var(--admin-bg-tertiary); display: flex; align-items: center; justify-content: center;">
+                    <Calendar class="w-6 h-6 placeholder-icon" />
+                  </div>
+                )}
+              </td>
+              <td>
+                <div class="event-title">{event.title}</div>
+                {event.description && (
+                  <div class="event-description">{event.description.substring(0, 60)}...</div>
+                )}
+                {event.featured && (
+                  <div style="margin-top: 0.5rem;">
+                    <span class="featured-badge">Featured</span>
+                  </div>
+                )}
+              </td>
+              <td>{formatDate(event.date)}</td>
+              <td>
+                <div class="location">
+                  <MapPin class="w-4 h-4 location-icon" />
+                  <div class="location-text">
+                    {event.venue && <div class="venue">{event.venue}</div>}
+                    {event.city && event.country && (
+                      <div>{event.city}, {event.country}</div>
+                    )}
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class={`status-badge status-${event.status || 'upcoming'}`}>
+                  {event.status || 'upcoming'}
+                </span>
+              </td>
+              <td>
+                <div class="actions">
+                  <a href={`/admin/events/edit/${event.id}`} class="btn-sm btn-edit">
+                    <Edit class="w-4 h-4" />
+                    Edit
+                  </a>
+                  <form method="POST" style="display: inline;">
+                    <input type="hidden" name="action" value="delete" />
+                    <input type="hidden" name="eventId" value={event.id} />
+                    <button type="submit" class="btn-sm btn-delete"
+                      onclick="return confirm('Are you sure you want to delete this event?')">
+                      <Trash2 class="w-4 h-4" />
+                      Delete
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    ) : (
+      <div class="empty-state">
+        <h3>No events found</h3>
+        <p>
+          {filter === 'all'
+            ? "You haven't created any events yet."
+            : `No ${filter} events found.`}
+        </p>
+        <a href="/admin/events/new" class="btn-primary">
+          <Plus class="w-4 h-4" />
+          Create Your First Event
+        </a>
+      </div>
+    )}
+  </div>
+</AdminLayout>

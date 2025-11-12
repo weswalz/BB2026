@@ -1,0 +1,99 @@
+---
+import OptimizedImage from './OptimizedImage.astro';
+
+export interface Props {
+  title: string;
+  excerpt?: string;
+  date?: string;
+  image?: string;
+  slug?: string;
+  category?: string;
+}
+
+const { 
+  title, 
+  excerpt, 
+  date, 
+  image = '/images/news-placeholder.jpg', 
+  slug, 
+  category = 'News'
+} = Astro.props;
+
+const newsUrl = slug ? `/news/${slug}/` : '#';
+const formattedDate = date ? new Date(date).toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric'
+}) : '';
+---
+
+<article class="combat-card rounded-lg overflow-hidden transition-all duration-300">
+  <div class="aspect-video bg-neutral-focus relative overflow-hidden">
+    <OptimizedImage
+      src={image}
+      alt={title}
+      width={400}
+      height={225}
+      class="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+      loading="lazy"
+    />
+    {category && (
+      <div class="absolute top-4 left-4">
+        <span class="badge badge-primary font-semibold">{category}</span>
+      </div>
+    )}
+  </div>
+  
+  <div class="p-6">
+    {formattedDate && (
+      <time class="text-sm text-primary font-medium mb-2 block">
+        {formattedDate}
+      </time>
+    )}
+    
+    <h3 class="text-xl champion-title mb-3 text-base-content leading-tight hover:text-primary transition-colors boxing-glow">
+      <a href={newsUrl} class="stretched-link">
+        {title}
+      </a>
+    </h3>
+    
+    {excerpt && (
+      <p class="text-base-content/80 mb-4 line-clamp-3">
+        {excerpt}
+      </p>
+    )}
+    
+    <div class="flex items-center text-sm text-primary font-semibold">
+      <a href={newsUrl} class="hover:text-primary-focus transition-colors">
+        Read More
+      </a>
+      <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+      </svg>
+    </div>
+  </div>
+</article>
+
+<style>
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .stretched-link {
+    position: relative;
+    z-index: 1;
+  }
+  
+  .stretched-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -1;
+  }
+</style>

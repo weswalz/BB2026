@@ -1,0 +1,145 @@
+---
+// Header navigation component with Events dropdown and glassmorphism effect
+---
+
+<header class="fixed top-0 w-full z-50 transition-all duration-300" id="navbar">
+  <div class="container mx-auto px-4">
+    <nav class="flex items-center justify-between h-20">
+      <!-- Logo/Brand -->
+      <div class="flex-shrink-0">
+        <a href="/" class="block">
+          <img 
+            src="/images/logos/logo-white.png" 
+            alt="Biyu Boxing - Premium Boxing Promotion" 
+            class="h-12 w-auto"
+            loading="eager"
+          />
+        </a>
+      </div>
+      
+      <!-- Desktop Navigation -->
+      <div class="hidden lg:flex items-center space-x-8">
+        <ul class="flex items-center space-x-6 text-white uppercase font-semibold text-sm tracking-wider">
+          <li><a href="/" class="hover:text-yellow-400 transition-colors">Home</a></li>
+          <li><a href="/about-us/" class="hover:text-yellow-400 transition-colors">About Us</a></li>
+          <li><a href="/news/" class="hover:text-yellow-400 transition-colors">News</a></li>
+          
+          <!-- Events Dropdown -->
+          <li class="relative group">
+            <button class="hover:text-yellow-400 transition-colors cursor-pointer flex items-center">
+              EVENTS
+              <svg class="fill-current w-4 h-4 ml-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/>
+              </svg>
+            </button>
+            <ul class="absolute left-0 mt-2 w-52 bg-black border border-yellow-400/50 rounded-lg shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+              <li><a href="/events/" class="block px-4 py-3 hover:bg-yellow-400/20 hover:text-yellow-400 transition-colors border-b border-gray-800">Upcoming Events</a></li>
+              <li><a href="/events/previous/" class="block px-4 py-3 hover:bg-yellow-400/20 hover:text-yellow-400 transition-colors">Previous Events</a></li>
+            </ul>
+          </li>
+          
+          <li><a href="/fighters/" class="hover:text-yellow-400 transition-colors">Fighters</a></li>
+          <li><a href="/box-for-us/" class="hover:text-yellow-400 transition-colors">Box for Us</a></li>
+          <li><a href="/contact-us/" class="hover:text-yellow-400 transition-colors">Contact Us</a></li>
+        </ul>
+      </div>
+      
+      <!-- CTA Button -->
+      <div class="flex items-center">
+        <a href="/contact-us/" class="biyu-unified-btn hidden sm:inline-flex items-center">
+          Contact Us
+        </a>
+        
+        <!-- Mobile Menu Button -->
+        <button class="lg:hidden ml-4 text-white" id="mobile-menu-button">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+      </div>
+    </nav>
+  </div>
+  
+  <!-- Mobile Menu -->
+  <div id="mobile-menu" class="lg:hidden hidden fixed inset-0 top-20 z-40 bg-black/50 backdrop-blur-md">
+    <div class="bg-white/5 backdrop-blur-2xl border-t border-white/10 shadow-lg">
+    <ul class="px-4 py-4 text-white uppercase font-semibold text-xl tracking-wider">
+      <li class="border-b border-white/20"><a href="/" class="block py-3 text-center hover:text-yellow-400 transition-colors">Home</a></li>
+      <li class="border-b border-white/20"><a href="/about-us/" class="block py-3 text-center hover:text-yellow-400 transition-colors">About Us</a></li>
+      <li class="border-b border-white/20"><a href="/news/" class="block py-3 text-center hover:text-yellow-400 transition-colors">News</a></li>
+      <li class="border-b border-white/20"><a href="/events/" class="block py-3 text-center hover:text-yellow-400 transition-colors">Upcoming Events</a></li>
+      <li class="border-b border-white/20"><a href="/events/previous/" class="block py-3 text-center hover:text-yellow-400 transition-colors">Previous Events</a></li>
+      <li class="border-b border-white/20"><a href="/fighters/" class="block py-3 text-center hover:text-yellow-400 transition-colors">Fighters</a></li>
+      <li class="border-b border-white/20"><a href="/box-for-us/" class="block py-3 text-center hover:text-yellow-400 transition-colors">Box for Us</a></li>
+      <li class="border-b border-white/20"><a href="/contact-us/" class="block py-3 text-center hover:text-yellow-400 transition-colors">Contact Us</a></li>
+    </ul>
+    </div>
+  </div>
+</header>
+
+<!-- Spacer for fixed header -->
+<div class="h-20"></div>
+
+<style>
+  /* Navbar background appears on scroll */
+  #navbar.scrolled {
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  
+  @media screen and (width <= 639px) {
+    img {
+      max-width: 100%;
+      height: 30px;
+    }
+    .flex-shrink-0 {
+      display: flex;
+      align-items: center;
+      height: 80px;
+    }
+    .flex-shrink-0 a {
+      display: flex;
+      align-items: center;
+    }
+  }
+</style>
+
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Navbar scroll effect
+    const navbar = document.getElementById('navbar');
+    
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 50) {
+        navbar.classList.add('scrolled');
+      } else {
+        navbar.classList.remove('scrolled');
+      }
+    });
+
+    // Active link highlighting - ONLY navigation menu links
+    const navLinks = document.querySelectorAll('nav ul li a, #mobile-menu ul li a:not(.biyu-unified-btn)');
+    const currentPath = window.location.pathname;
+    
+    navLinks.forEach(link => {
+      const href = link.getAttribute('href');
+      if (href === currentPath || (href !== '/' && currentPath.startsWith(href))) {
+        link.classList.add('text-yellow-400');
+      }
+    });
+
+    // Mobile menu toggle
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
+    
+    if (mobileMenuButton && mobileMenu) {
+      mobileMenuButton.addEventListener('click', () => {
+        mobileMenu.classList.toggle('hidden');
+      });
+    }
+  });
+</script>

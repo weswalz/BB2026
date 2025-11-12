@@ -1,0 +1,22 @@
+---
+import AnimatedSection from './motion/AnimatedSection.tsx';
+
+export interface Props {
+  className?: string;
+  delay?: number;
+  direction?: 'up' | 'down' | 'left' | 'right';
+  stagger?: boolean;
+}
+
+const { className = '', delay = 0, direction = 'up', stagger = false } = Astro.props;
+---
+
+<AnimatedSection 
+  className={className} 
+  delay={delay} 
+  direction={direction} 
+  stagger={stagger} 
+  client:visible
+>
+  <slot />
+</AnimatedSection>

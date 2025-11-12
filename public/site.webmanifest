@@ -1,0 +1,88 @@
+{
+  "name": "BiYu Promotions - Elite Boxing Talent Development",
+  "short_name": "BiYu Boxing",
+  "description": "Professional boxing promotion company specializing in developing elite fighters for major boxing organizations. Founded by Bobby Harrison with 15+ years experience.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#D4AF37",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["sports", "entertainment", "lifestyle"],
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/images/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/images/screenshot-narrow.png", 
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Our Fighters",
+      "short_name": "Fighters",
+      "description": "View our roster of world-class boxers",
+      "url": "/fighters/",
+      "icons": [
+        {
+          "src": "/images/icons/fighters-icon.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Upcoming Events",
+      "short_name": "Events", 
+      "description": "Check out upcoming boxing matches",
+      "url": "/events/",
+      "icons": [
+        {
+          "src": "/images/icons/events-icon.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Latest News",
+      "short_name": "News",
+      "description": "Stay updated with boxing news",
+      "url": "/news/",
+      "icons": [
+        {
+          "src": "/images/icons/news-icon.png",
+          "sizes": "96x96", 
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}

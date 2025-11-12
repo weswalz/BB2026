@@ -1,0 +1,85 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import Header from '../../../components/sections/Header.astro';
+import Footer from '../../../components/sections/Footer.astro';
+import BoxForUsSection from '../../../components/sections/BoxForUsSection.astro';
+import { getAllEvents } from '../../../lib/database.js';
+import { getPage } from '../../../lib/pages.js';
+
+export const prerender = false;
+
+const PAGE_ID = 'previous-events';
+const page = await getPage(PAGE_ID);
+const fields = page?.fields || {};
+const getField = (key, defaultValue = '') => fields[key] || defaultValue;
+
+// Fetch all previous events from MongoDB
+const allEvents = await getAllEvents();
+const previousEvents = allEvents.filter(event => event.status === 'previous' || event.status === 'past').sort((a, b) => new Date(b.date) - new Date(a.date));
+
+const formatDate = (date) => {
+  if (!date) return '';
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+};
+---
+
+<Layout 
+  title={getField('seoTitle', 'Previous Events - BiYu Promotions | Past Boxing Events')} 
+  description={getField('seoDescription', "View BiYu Promotions' previous boxing events. Championship fights, memorable moments, and fight results from our past events.")}
+>
+  <Header />
+  
+  <main class="min-h-screen">
+    <!-- Hero Section -->
+    <section class="relative h-[60vh] min-h-[400px] flex items-center justify-center text-white">
+      <div class="absolute inset-0 z-0">
+        <img 
+          src={getField('heroImage', '/images/previouseventshero.webp')} 
+          alt="Previous Boxing Events" 
+          class="w-full h-full object-cover"
+        />
+        <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70"></div>
+      </div>
+      
+      <div class="relative z-10 container mx-auto px-4 text-center">
+        <h1 class="text-5xl md:text-7xl font-display font-bold mb-6 hero-text boxing-glow">
+          {getField('heroTitle', 'PREVIOUS EVENTS')}
+        </h1>
+      </div>
+    </section>
+
+    <!-- Events Grid -->
+    <section class="py-16 bg-black text-white">
+      <div class="container mx-auto px-4">
+        <div class="max-w-6xl mx-auto">
+          <div class="grid md:grid-cols-2 gap-8">
+            {previousEvents.map((event) => (
+              <div class="relative overflow-hidden rounded-lg">
+                <img 
+                  src={event.image} 
+                  alt={event.title}
+                  class="w-full h-80 object-cover"
+                  loading="lazy"
+                />
+                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-6">
+                  <h2 class="text-2xl font-display font-bold text-[#FFD700] mb-2">{event.title}</h2>
+                  <p class="text-lg mb-1">{formatDate(event.date)}</p>
+                  <p class="text-base">{event.city}, {event.country}</p>
+                  <button class="biyu-unified-btn mt-4 px-4 py-2 text-sm">
+                    {getField('viewMoreButtonText', 'View More')}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <BoxForUsSection />
+    
+  </main>
+
+  <Footer />
+</Layout>

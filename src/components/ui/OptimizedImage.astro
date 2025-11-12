@@ -1,0 +1,166 @@
+---
+// Optimized image component with lazy loading and performance features
+import { Image } from 'astro:assets';
+
+export interface Props {
+  src: string | ImageMetadata;
+  alt: string;
+  width?: number;
+  height?: number;
+  loading?: 'lazy' | 'eager';
+  class?: string;
+  quality?: number;
+  format?: 'webp' | 'avif' | 'png' | 'jpg';
+  sizes?: string;
+  priority?: boolean;
+  placeholder?: 'blur' | 'none';
+}
+
+const {
+  src,
+  alt,
+  width,
+  height,
+  loading = 'lazy',
+  class: className = '',
+  quality = 80,
+  format = 'webp',
+  sizes,
+  priority = false,
+  placeholder = 'none'
+} = Astro.props;
+
+// Determine loading strategy based on priority
+const imageLoading = priority ? 'eager' : loading;
+
+// Generate responsive sizes if not provided
+const responsiveSizes = sizes || `
+  (max-width: 768px) 100vw,
+  (max-width: 1200px) 50vw,
+  33vw
+`;
+
+// Add performance classes
+const performanceClasses = [
+  className,
+  'gpu-accelerated', // From our global CSS
+  loading === 'lazy' ? 'fade-in-on-load' : '',
+  placeholder === 'blur' ? 'placeholder-blur' : ''
+].filter(Boolean).join(' ');
+---
+
+{typeof src === 'string' ? (
+  <!-- Regular img tag for external images -->
+  <img
+    src={src}
+    alt={alt}
+    width={width}
+    height={height}
+    loading={imageLoading}
+    class={performanceClasses}
+    sizes={responsiveSizes}
+    decoding="async"
+    fetchpriority={priority ? 'high' : 'auto'}
+  />
+) : (
+  <!-- Astro Image component for local/optimized images -->
+  <Image
+    src={src}
+    alt={alt}
+    width={width}
+    height={height}
+    loading={imageLoading}
+    class={performanceClasses}
+    quality={quality}
+    format={format}
+    sizes={responsiveSizes}
+    decoding="async"
+    fetchpriority={priority ? 'high' : 'auto'}
+  />
+)}
+
+<style>
+  /* Fade in animation for lazy loaded images */
+  .fade-in-on-load {
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+  }
+  
+  .fade-in-on-load[loading="lazy"] {
+    opacity: 1;
+  }
+  
+  /* Blur placeholder effect */
+  .placeholder-blur {
+    background: linear-gradient(135deg, var(--black-medium), var(--black-pure));
+    filter: blur(10px);
+    transition: filter 0.3s ease-out;
+  }
+  
+  .placeholder-blur.loaded {
+    filter: blur(0);
+  }
+  
+  /* Performance optimizations */
+  .gpu-accelerated {
+    will-change: transform, opacity;
+    transform: translateZ(0);
+  }
+  
+  /* Responsive image behavior */
+  img {
+    height: auto;
+    max-width: 100%;
+    display: block;
+  }
+  
+  /* Aspect ratio preservation */
+  [width][height] {
+    aspect-ratio: attr(width) / attr(height);
+  }
+</style>
+
+<script>
+  // Enhanced lazy loading with Intersection Observer
+  if ('IntersectionObserver' in window) {
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target as HTMLImageElement;
+          
+          // Add loaded class for fade-in effect
+          img.addEventListener('load', () => {
+            img.classList.add('loaded');
+            img.style.opacity = '1';
+          });
+          
+          // Unobserve after loading starts
+          observer.unobserve(img);
+        }
+      });
+    }, {
+      // Load images 100px before they enter viewport
+      rootMargin: '100px',
+      threshold: 0.01
+    });
+    
+    // Observe all lazy loading images
+    document.querySelectorAll('img[loading="lazy"]').forEach(img => {
+      imageObserver.observe(img);
+    });
+  }
+  
+  // Preload critical images on hover for better perceived performance
+  document.querySelectorAll('a').forEach(link => {
+    link.addEventListener('mouseenter', () => {
+      const href = link.getAttribute('href');
+      if (href && (href.includes('/our-fighters/') || href.includes('/news/') || href.includes('/events/'))) {
+        // Preload the next page's critical images
+        const preloadLink = document.createElement('link');
+        preloadLink.rel = 'prefetch';
+        preloadLink.href = href;
+        document.head.appendChild(preloadLink);
+      }
+    }, { once: true });
+  });
+</script>

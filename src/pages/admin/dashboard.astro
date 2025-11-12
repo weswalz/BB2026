@@ -1,0 +1,111 @@
+---
+import AdminLayout from '../../components/admin/AdminLayout.astro';
+import DashboardStats from '../../components/admin/DashboardStats';
+import QuickActions from '../../components/admin/QuickActions';
+import RecentNews from '../../components/admin/RecentNews';
+import { getAllNews } from '../../lib/news.js';
+import { getAllFighters } from '../../lib/fighters.js';
+import { getAllMedia } from '../../lib/media.js';
+import { connectToDatabase } from '../../lib/database.js';
+import { requireAuth } from '../../lib/auth-middleware.js';
+
+// Check authentication first, before any async operations
+const authRedirect = requireAuth(Astro);
+if (authRedirect) return authRedirect;
+
+// Get statistics
+let stats = {
+  newsCount: 0,
+  publishedCount: 0,
+  draftCount: 0,
+  mediaCount: 0,
+  pagesCount: 0,
+  fightersCount: 0
+};
+
+let allNews = [];
+try {
+  allNews = getAllNews();
+  stats.newsCount = allNews.length;
+  stats.publishedCount = allNews.filter(n => n.published).length;
+  stats.draftCount = allNews.length - stats.publishedCount;
+} catch (error) {
+  console.error('Error fetching stats:', error);
+}
+
+try {
+  const fighters = await getAllFighters();
+  stats.fightersCount = fighters.length;
+} catch (error) {
+  console.error('Error fetching fighters:', error);
+}
+
+try {
+  const media = await getAllMedia();
+  stats.mediaCount = media.length;
+} catch (error) {
+  console.error('Error fetching media:', error);
+}
+
+try {
+  const db = connectToDatabase();
+  const result = db.prepare('SELECT COUNT(*) as count FROM pages').get();
+  stats.pagesCount = result.count;
+} catch (error) {
+  console.error('Error fetching pages count:', error);
+}
+
+// Get recent news
+let recentNews = [];
+try {
+  recentNews = allNews.slice(0, 5);
+} catch (error) {
+  console.error('Error fetching recent news:', error);
+}
+---
+
+<AdminLayout pageTitle="Dashboard">
+  <!-- Dashboard Header -->
+  <div class="mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
+    <h1 class="text-3xl md:text-4xl font-bold text-foreground mb-2 tracking-tight">Dashboard Overview</h1>
+    <p class="text-muted-foreground text-base">Monitor your content, track performance, and manage your boxing platform.</p>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
+    <DashboardStats stats={stats} client:load />
+  </div>
+
+  <!-- Charts Section -->
+  <div class="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-card border border-border rounded-xl p-6 shadow-sm transition-all hover:shadow-lg hover:-translate-y-0.5">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-semibold text-foreground">Content Activity</h3>
+        </div>
+        <div class="h-[250px] bg-gradient-to-br from-muted/30 to-muted/10 rounded-lg flex items-center justify-center text-muted-foreground text-sm border-2 border-dashed border-border">
+          Chart visualization coming soon
+        </div>
+      </div>
+
+      <div class="bg-card border border-border rounded-xl p-6 shadow-sm transition-all hover:shadow-lg hover:-translate-y-0.5">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-semibold text-foreground">Media Growth</h3>
+        </div>
+        <div class="h-[250px] bg-gradient-to-br from-muted/30 to-muted/10 rounded-lg flex items-center justify-center text-muted-foreground text-sm border-2 border-dashed border-border">
+          Chart visualization coming soon
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
+    <QuickActions client:load />
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-[400ms]">
+    <RecentNews articles={recentNews} client:load />
+  </div>
+</AdminLayout>

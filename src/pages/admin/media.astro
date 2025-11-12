@@ -1,0 +1,166 @@
+---
+import AdminLayout from '../../components/admin/AdminLayout.astro';
+import { requireAuth } from '../../lib/auth-middleware.js';
+import { verifySession } from '../../lib/auth.js';
+import { verifyCSRFToken, getClientIP, logAudit } from '../../lib/security.js';
+
+// Check authentication first, before any async operations
+const authRedirect = requireAuth(Astro);
+if (authRedirect) return authRedirect;
+
+// Get session data for CSRF token
+const sessionCookie = Astro.cookies.get('admin_session')?.value;
+const sessionData = verifySession(sessionCookie);
+
+let message = null;
+let mediaItems = [];
+
+// Fetch media items on page load
+try {
+  const response = await fetch(Astro.url.origin + '/api/media?_t=' + Date.now());
+  if (response.ok) {
+    mediaItems = await response.json();
+  } else {
+    throw new Error('Failed to fetch media items');
+  }
+} catch (error) {
+  console.error('Error fetching media:', error);
+  message = { type: 'error', text: 'Failed to load media library.' };
+}
+
+// Handle form submissions (upload and delete)
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  const action = formData.get('action');
+  const csrfToken = formData.get('csrf_token');
+
+  // Verify CSRF token
+  if (!verifyCSRFToken(sessionData, csrfToken)) {
+    message = { type: 'error', text: 'Invalid security token. Please refresh and try again.' };
+  } else if (action === 'upload') {
+    const file = formData.get('file');
+    if (file && file.size > 0) {
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', file);
+
+      try {
+        const response = await fetch(Astro.url.origin + '/api/media/upload', {
+          method: 'POST',
+          body: uploadFormData,
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          // Log upload
+          const ipAddress = getClientIP(Astro.request);
+          logAudit({
+            username: sessionData.user.username,
+            action: 'UPLOAD',
+            entityType: 'media',
+            entityId: result.media?.id,
+            ipAddress
+          });
+          message = { type: 'success', text: 'File uploaded successfully!' };
+        } else {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Upload failed');
+        }
+      } catch (error) {
+        console.error('Upload error:', error);
+        message = { type: 'error', text: `Upload failed: ${error.message}` };
+      }
+    } else {
+      message = { type: 'error', text: 'No file selected for upload.' };
+    }
+  } else if (action === 'delete') {
+    const mediaId = formData.get('mediaId');
+    if (mediaId) {
+      try {
+        const response = await fetch(Astro.url.origin + '/api/media', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: mediaId }),
+        });
+
+        if (response.ok) {
+          // Log deletion
+          const ipAddress = getClientIP(Astro.request);
+          logAudit({
+            username: sessionData.user.username,
+            action: 'DELETE',
+            entityType: 'media',
+            entityId: mediaId,
+            ipAddress
+          });
+          message = { type: 'success', text: 'Media item deleted successfully!' };
+        } else {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Deletion failed');
+        }
+      } catch (error) {
+        console.error('Delete error:', error);
+        message = { type: 'error', text: `Deletion failed: ${error.message}` };
+      }
+    } else {
+      message = { type: 'error', text: 'No media ID provided for deletion.' };
+    }
+  }
+
+  // Redirect to self to clear form data and re-fetch media items
+  return Astro.redirect(Astro.url.pathname);
+}
+---
+
+<AdminLayout pageTitle="Media Library">
+  {message && (
+    <div class={`p-4 rounded-lg mb-4 border ${
+      message.type === 'success'
+        ? 'bg-green-500/10 text-green-600 border-green-500/30'
+        : 'bg-red-500/10 text-red-600 border-red-500/30'
+    }`}>
+      {message.text}
+    </div>
+  )}
+
+  <div class="bg-card border border-border p-6 rounded-lg shadow-sm mb-8">
+    <h2 class="text-xl font-semibold text-foreground mb-4">Upload New Media</h2>
+    <form method="POST" enctype="multipart/form-data" class="space-y-3">
+      <input type="hidden" name="csrf_token" value={sessionData?.csrfToken} />
+      <div>
+        <input type="file" name="file" required accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml" class="w-full" />
+        <p class="text-sm text-muted-foreground mt-2">
+          <strong>Accepted:</strong> JPG, PNG, WebP, GIF, SVG •
+          <strong>Max size:</strong> 10MB •
+          <strong>Dimensions:</strong> Cannot exceed 120% of largest existing image of same type
+        </p>
+      </div>
+      <button type="submit" name="action" value="upload" class="px-6 py-2.5 bg-blue-600 text-white rounded-md font-medium transition-all hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-md border border-blue-700">
+        Upload
+      </button>
+    </form>
+  </div>
+
+  <h2 class="text-xl font-semibold text-foreground mb-4">Existing Media</h2>
+  {mediaItems.length > 0 ? (
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      {mediaItems.map(item => (
+        <div class="bg-card border border-border rounded-lg shadow-sm overflow-hidden flex flex-col items-center p-2 text-center">
+          <img src={item.url} alt={item.alt || item.originalName} class="w-full h-24 object-contain mb-2" />
+          <p class="text-sm text-foreground break-all line-clamp-2">{item.originalName}</p>
+          <div class="flex gap-2 mt-2">
+            <form method="POST" onsubmit="return confirm('Are you sure you want to delete this media item?');">
+              <input type="hidden" name="action" value="delete" />
+              <input type="hidden" name="mediaId" value={item.id} />
+              <input type="hidden" name="csrf_token" value={sessionData?.csrfToken} />
+              <button type="submit" class="px-3 py-1.5 text-sm bg-red-500 text-white rounded-md border-none cursor-pointer transition-all hover:bg-red-600">
+                Delete
+              </button>
+            </form>
+          </div>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <p class="text-muted-foreground">No media items found.</p>
+  )}
+</AdminLayout>

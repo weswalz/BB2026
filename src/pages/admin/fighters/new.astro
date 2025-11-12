@@ -1,0 +1,201 @@
+---
+import AdminLayout from '../../../components/admin/AdminLayout.astro';
+import MediaSelector from '../../../components/admin/MediaSelector.astro';
+import { createFighter } from '../../../lib/fighters.js';
+import { requireAuth } from '../../../lib/auth-middleware.js';
+import { validateFighter, formatValidationErrors } from '../../../lib/validation.js';
+import { verifySession } from '../../../lib/auth.js';
+import { verifyCSRFToken, logAudit, getClientIP } from '../../../lib/security.js';
+
+// Check authentication first, before any async operations
+const authRedirect = requireAuth(Astro);
+if (authRedirect) return authRedirect;
+
+// Get session data for CSRF token
+const sessionCookie = Astro.cookies.get('admin_session')?.value;
+const sessionData = verifySession(sessionCookie);
+
+let message = null;
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const csrfToken = formData.get('csrf_token');
+
+    // Verify CSRF token first
+    if (!verifyCSRFToken(sessionData, csrfToken)) {
+      message = { type: 'error', text: 'Invalid security token. Please refresh and try again.' };
+    } else {
+      const fighterData = {
+        name: formData.get('name'),
+        nickname: formData.get('nickname') || null,
+        nationality: formData.get('nationality') || null,
+        record: formData.get('record') || null,
+        weightClass: formData.get('weightClass') || null,
+        height: formData.get('height') || null,
+        weight: formData.get('weight') || null,
+        reach: formData.get('reach') || null,
+        stance: formData.get('stance') || null,
+        hometown: formData.get('hometown') || null,
+        bio: formData.get('bio') || null,
+        image: formData.get('image') || null,
+        flag: formData.get('flag') || null,
+        wins: 0,
+        losses: 0,
+        draws: 0,
+        kos: 0,
+        displayOrder: 0,
+        status: 'active',
+      };
+
+      // Validate input
+      const validation = validateFighter(fighterData);
+      if (!validation.success) {
+        message = {
+          type: 'error',
+          text: formatValidationErrors(validation.errors)
+        };
+      } else {
+        const fighterId = await createFighter(validation.data);
+
+        if (fighterId) {
+          // Log audit event
+          const ipAddress = getClientIP(Astro.request);
+          logAudit({
+            username: sessionData.user.username,
+            action: 'CREATE',
+            entityType: 'fighter',
+            entityId: fighterId,
+            ipAddress
+          });
+
+          return Astro.redirect('/admin/fighters');
+        } else {
+          message = { type: 'error', text: 'Failed to create fighter. Please try again.' };
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[ADMIN] Error creating fighter:', error);
+    message = { type: 'error', text: 'An error occurred. Please try again.' };
+  }
+}
+---
+
+<AdminLayout pageTitle="Add New Fighter">
+  <div slot="header-actions">
+    <a href="/admin/fighters" class="btn-secondary">
+      ← Back to Fighters
+    </a>
+  </div>
+
+  <style>
+    .form-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: var(--admin-bg-secondary);
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .form-group { margin-bottom: 1.5rem; }
+    label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--admin-text-primary); }
+    input[type="text"], textarea { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--admin-border-default); border-radius: 4px; font-size: 1rem; background: var(--admin-bg-primary); color: var(--admin-text-primary); }
+    textarea { min-height: 120px; }
+    .btn-primary { background: linear-gradient(135deg, #F7DF5B, #B8941F); color: #000; padding: 0.75rem 1.5rem; border: 1px solid #F7DF5B; border-radius: 4px; font-size: 1rem; cursor: pointer; font-weight: 600; }
+    .btn-secondary { background: #6b7280; color: white; padding: 0.5rem 1rem; text-decoration: none; border-radius: 4px; }
+    .alert { padding: 1rem; border-radius: 4px; margin-bottom: 1rem; }
+    .alert-error { background: #fee2e2; color: #991b1b; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .help-text { font-size: 0.875rem; color: #6b7280; margin-top: 0.25rem; }
+  </style>
+
+  {message && (
+    <div class={`alert alert-${message.type}`}>
+      {message.text}
+    </div>
+  )}
+
+  <div class="form-container">
+    <form method="POST">
+      <input type="hidden" name="csrf_token" value={sessionData?.csrfToken} />
+      <div class="form-row">
+        <div class="form-group">
+          <label for="name">Full Name *</label>
+          <input type="text" id="name" name="name" required />
+        </div>
+        <div class="form-group">
+          <label for="nickname">Nickname</label>
+          <input type="text" id="nickname" name="nickname" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="record">Record *</label>
+          <input type="text" id="record" name="record" placeholder="e.g., 10-0-0" required />
+          <p class="help-text">Wins-Losses-Draws</p>
+        </div>
+        <div class="form-group">
+          <label for="weightClass">Weight Class *</label>
+          <input type="text" id="weightClass" name="weightClass" placeholder="e.g., Heavyweight" required />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="nationality">Nationality</label>
+          <input type="text" id="nationality" name="nationality" placeholder="e.g., United States" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Fighter Image</label>
+        <MediaSelector inputName="image" inputId="image" mediaType="image" />
+        <p class="help-text">Select a profile image for the fighter.</p>
+      </div>
+
+      <div class="form-group">
+        <label>Country Flag</label>
+        <MediaSelector inputName="flag" inputId="flag" mediaType="image" />
+        <p class="help-text">Select the fighter's country flag image.</p>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="height">Height</label>
+          <input type="text" id="height" name="height" placeholder="e.g., 6'2"" />
+        </div>
+        <div class="form-group">
+          <label for="weight">Weight</label>
+          <input type="text" id="weight" name="weight" placeholder="e.g., 205 lbs" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="reach">Reach</label>
+          <input type="text" id="reach" name="reach" placeholder="e.g., 78 in" />
+        </div>
+        <div class="form-group">
+          <label for="stance">Stance</label>
+          <input type="text" id="stance" name="stance" placeholder="e.g., Orthodox" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="hometown">Hometown</label>
+        <input type="text" id="hometown" name="hometown" placeholder="e.g., Miami, FL" />
+      </div>
+
+      <div class="form-group">
+        <label for="bio">Biography</label>
+        <textarea id="bio" name="bio" placeholder="A brief bio of the fighter..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <button type="submit" class="btn-primary">Create Fighter</button>
+      </div>
+    </form>
+  </div>
+</AdminLayout>

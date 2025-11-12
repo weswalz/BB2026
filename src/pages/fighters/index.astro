@@ -1,0 +1,161 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/sections/Header.astro';
+import Footer from '../../components/sections/Footer.astro';
+import BoxForUsSection from '../../components/sections/BoxForUsSection.astro';
+import { getAllFighters } from '../../lib/database.js';
+
+export const prerender = false;
+
+// Fetch all fighters from MongoDB
+const fighters = await getAllFighters();
+console.log('Fighters fetched:', fighters.length, fighters);
+---
+
+<Layout 
+  title="Our Fighters - BiYu Promotions | Professional Boxing Roster" 
+  description="Meet the BiYu Promotions fighters - from undefeated prospects to ranked contenders. Discover our champions across all weight divisions."
+>
+  <Header />
+  
+  <main class="min-h-screen">
+    <!-- Hero Section -->
+    <section class="relative h-[60vh] min-h-[400px] flex items-center justify-center text-white">
+      <div class="absolute inset-0 z-0">
+        <img 
+          src="/images/ourfighershero.webp" 
+          alt="BiYu Promotions Fighters" 
+          class="w-full h-full object-cover"
+        />
+        <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70"></div>
+      </div>
+      
+      <div class="relative z-10 container mx-auto px-4 text-center">
+        <h1 class="text-5xl md:text-7xl font-display font-bold mb-6 hero-text boxing-glow">
+          OUR FIGHTERS
+        </h1>
+      </div>
+    </section>
+
+
+    <!-- Fighters Section -->
+    <section class="py-16 bg-black text-white">
+      <div class="container mx-auto px-4">
+        <div class="text-center mb-12">
+          <p class="text-lg max-w-4xl mx-auto">
+            We have a number of professional fighters under contract and have real 'crowd pleasers', who are rising to the top of the boxing profession. Our fighters embody the heart and soul of BiYu Promotions and each athlete brings unique talent, a relentless drive, and their own powerful story into the ring.
+          </p>
+        </div>
+
+        <!-- Top Row Fighters (3 columns) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12 max-w-6xl mx-auto">
+          {fighters.slice(0, 3).map((fighter) => (
+            <div class="relative bg-[#334155] rounded-lg overflow-hidden">
+              <!-- Flag -->
+              <div class="absolute top-4 right-4 z-10">
+                <img src={fighter.flag} alt={`${fighter.nationality} flag`} class="w-12 h-8 rounded-sm" />
+              </div>
+              
+              <!-- Fighter Image and Info -->
+              <div class="pt-4 pb-3 px-3 text-center">
+                <div class="w-full h-52 mx-auto mb-3 overflow-hidden rounded">
+                  <img 
+                    src={fighter.image} 
+                    alt={fighter.name}
+                    class="w-full h-full object-contain"
+                  />
+                </div>
+                <h3 class="text-xl font-bold mb-1 text-[#FFD700] uppercase tracking-wide">{fighter.name}</h3>
+                <p class="text-gray-300 text-sm mb-4">{fighter.weightClass}</p>
+              </div>
+              
+              <!-- Stats Grid -->
+              <div class="grid grid-cols-4 gap-0 mb-4">
+                <div class="bg-[#FFD700] text-black py-4 px-3 text-center">
+                  <div class="text-2xl font-black">{fighter.wins}</div>
+                  <div class="text-xs font-bold uppercase">WIN</div>
+                </div>
+                <div class="bg-[#1e293b] text-white py-4 px-3 text-center">
+                  <div class="text-2xl font-black">{fighter.losses}</div>
+                  <div class="text-xs font-bold uppercase">LOSS</div>
+                </div>
+                <div class="bg-[#1e293b] text-white py-4 px-3 text-center">
+                  <div class="text-2xl font-black">{fighter.draws}</div>
+                  <div class="text-xs font-bold uppercase">DRAW</div>
+                </div>
+                <div class="bg-[#1e293b] text-white py-4 px-3 text-center">
+                  <div class="text-2xl font-black">{fighter.kos}</div>
+                  <div class="text-xs font-bold uppercase">KOs</div>
+                </div>
+              </div>
+              
+              <!-- Button -->
+              <div class="p-4">
+                <a href={`/fighters/${fighter.slug}`} class="biyu-unified-btn w-full px-4 py-3 text-sm rounded inline-block text-center">
+                  See Fighter Profile
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        <!-- Bottom Row Fighters (4 columns) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+          {fighters.slice(3).map((fighter) => (
+            <div class="relative bg-[#334155] rounded-lg overflow-hidden">
+              <!-- Flag -->
+              <div class="absolute top-3 right-3 z-10">
+                <img src={fighter.flag} alt={`${fighter.nationality} flag`} class="w-10 h-6 rounded-sm" />
+              </div>
+              
+              <!-- Fighter Image and Info -->
+              <div class="pt-3 pb-2 px-2 text-center">
+                <div class="w-full h-36 mx-auto mb-2 overflow-hidden rounded">
+                  <img 
+                    src={fighter.image} 
+                    alt={fighter.name}
+                    class="w-full h-full object-contain"
+                  />
+                </div>
+                <h3 class="text-base font-bold mb-1 text-[#FFD700] uppercase tracking-wide leading-tight">{fighter.name}</h3>
+                <p class="text-gray-300 text-xs mb-4">{fighter.weightClass}</p>
+              </div>
+              
+              <!-- Stats Grid -->
+              <div class="grid grid-cols-4 gap-0 mb-4">
+                <div class="bg-[#FFD700] text-black py-3 px-2 text-center">
+                  <div class="text-lg font-black">{fighter.wins}</div>
+                  <div class="text-xs font-bold uppercase">WIN</div>
+                </div>
+                <div class="bg-[#1e293b] text-white py-3 px-2 text-center">
+                  <div class="text-lg font-black">{fighter.losses}</div>
+                  <div class="text-xs font-bold uppercase">LOSS</div>
+                </div>
+                <div class="bg-[#1e293b] text-white py-3 px-2 text-center">
+                  <div class="text-lg font-black">{fighter.draws}</div>
+                  <div class="text-xs font-bold uppercase">DRAW</div>
+                </div>
+                <div class="bg-[#1e293b] text-white py-3 px-2 text-center">
+                  <div class="text-lg font-black">{fighter.kos}</div>
+                  <div class="text-xs font-bold uppercase">KOs</div>
+                </div>
+              </div>
+              
+              <!-- Button -->
+              <div class="p-4">
+                <a href={`/fighters/${fighter.slug}`} class="biyu-unified-btn w-full px-4 py-2 text-xs rounded inline-block text-center">
+                  See Fighter Profile
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+    
+    <BoxForUsSection />
+    
+  </main>
+
+  <Footer />
+</Layout>

@@ -1,0 +1,611 @@
+---
+import AdminLayout from '../../../components/admin/AdminLayout.astro';
+import MediaSelector from '../../../components/admin/MediaSelector.astro';
+import { createNews, getNewsCategories, getNewsTags } from '../../../lib/news.js';
+import { requireAuth } from '../../../lib/auth-middleware.js';
+import { validateNews, formatValidationErrors } from '../../../lib/validation.js';
+import { verifySession } from '../../../lib/auth.js';
+import { verifyCSRFToken, logAudit, getClientIP } from '../../../lib/security.js';
+
+// Check authentication first, before any async operations
+const authRedirect = requireAuth(Astro);
+if (authRedirect) return authRedirect;
+
+// Get session data for CSRF token
+const sessionCookie = Astro.cookies.get('admin_session')?.value;
+const sessionData = verifySession(sessionCookie);
+
+let message = null;
+let formData = {};
+
+// Get existing categories and tags
+const existingCategories = await getNewsCategories();
+const existingTags = await getNewsTags();
+
+// Handle form submission
+if (Astro.request.method === 'POST') {
+  try {
+    const data = await Astro.request.formData();
+    const csrfToken = data.get('csrf_token');
+
+    // Verify CSRF token first
+    if (!verifyCSRFToken(sessionData, csrfToken)) {
+      message = { type: 'error', text: 'Invalid security token. Please refresh and try again.' };
+    } else {
+      formData = {
+        title: data.get('title'),
+        content: data.get('content'),
+        excerpt: data.get('excerpt') || null,
+        category: data.get('category') || 'General',
+        tags: data.get('tags')?.split(',').map(t => t.trim()).filter(t => t) || [],
+        author: data.get('author') || 'BiYu Promotions',
+        published: data.get('published') === 'on',
+        featured: data.get('featured') === 'on',
+        featuredImage: data.get('featuredImage') || null,
+        seo: {
+          metaTitle: data.get('metaTitle') || null,
+          metaDescription: data.get('metaDescription') || null,
+        }
+      };
+
+      // Validate input
+      const validation = validateNews(formData);
+      if (!validation.success) {
+        message = {
+          type: 'error',
+          text: formatValidationErrors(validation.errors)
+        };
+      } else {
+        const newArticle = await createNews(validation.data);
+
+        if (newArticle) {
+          // Log audit event
+          const ipAddress = getClientIP(Astro.request);
+          logAudit({
+            username: sessionData.user.username,
+            action: 'CREATE',
+            entityType: 'news',
+            entityId: newArticle._id,
+            ipAddress
+          });
+
+          return Astro.redirect(`/admin/news/edit/${newArticle._id}?created=true`);
+        } else {
+          message = { type: 'error', text: 'Failed to create article. Please try again.' };
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[ADMIN] Error creating news:', error);
+    message = { type: 'error', text: 'An error occurred. Please try again.' };
+  }
+}
+---
+
+<AdminLayout pageTitle="Create News Article">
+  <style>
+    .form-container {
+      display: grid;
+      grid-template-columns: 1fr 350px;
+      gap: 2rem;
+    }
+
+    .main-content {
+      background: hsl(var(--card));
+      border: 1px solid hsl(var(--border));
+      padding: 2rem;
+      border-radius: 8px;
+    }
+
+    .sidebar-content {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .sidebar-section {
+      background: hsl(var(--card));
+      border: 1px solid hsl(var(--border));
+      padding: 1.5rem;
+      border-radius: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: hsl(var(--foreground));
+      font-size: 0.875rem;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 0.625rem 0.75rem;
+      border: 1px solid hsl(var(--border));
+      border-radius: 6px;
+      font-size: 0.875rem;
+      background: hsl(var(--background));
+      color: hsl(var(--foreground));
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: hsl(var(--ring));
+      box-shadow: 0 0 0 3px hsl(var(--ring) / 0.1);
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: hsl(var(--muted-foreground));
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+      font-family: inherit;
+    }
+
+    .editor-container {
+      min-height: 400px;
+      border: 1px solid hsl(var(--border));
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .checkbox-group:last-child {
+      margin-bottom: 0;
+    }
+
+    input[type="checkbox"] {
+      margin-right: 0.625rem;
+      width: 1.125rem;
+      height: 1.125rem;
+      cursor: pointer;
+    }
+
+    .checkbox-group label {
+      margin-bottom: 0;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+
+    .section-title {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: hsl(var(--foreground));
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid hsl(var(--border));
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+    }
+
+    .btn {
+      padding: 0.625rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #F7DF5B, #B8941F);
+      color: #000;
+      border: 1px solid #F7DF5B;
+      font-weight: 600;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #FFE87C, #F7DF5B);
+      box-shadow: 0 0 30px rgba(247, 223, 91, 0.35);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: hsl(var(--foreground));
+      border-color: hsl(var(--border));
+    }
+
+    .btn-outline:hover {
+      background: hsl(var(--accent));
+    }
+
+    .btn-full {
+      width: 100%;
+    }
+
+    .tags-hint {
+      font-size: 0.8125rem;
+      color: hsl(var(--muted-foreground));
+      margin-top: 0.375rem;
+    }
+
+    .autosave-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8125rem;
+      color: hsl(var(--muted-foreground));
+      padding: 0.5rem 0.75rem;
+      background: hsl(var(--muted) / 0.3);
+      border-radius: 6px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .autosave-indicator.visible {
+      opacity: 1;
+    }
+
+    .autosave-indicator.saved {
+      color: hsl(142 76% 36%);
+    }
+
+    .image-upload-area {
+      border: 2px dashed hsl(var(--border));
+      border-radius: 6px;
+      padding: 1.5rem;
+      text-align: center;
+      background: hsl(var(--muted) / 0.2);
+      transition: all 0.2s;
+    }
+
+    .image-upload-area:hover {
+      border-color: hsl(var(--primary));
+      background: hsl(var(--primary) / 0.05);
+    }
+
+    .image-upload-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: hsl(var(--muted));
+      color: hsl(var(--muted-foreground));
+    }
+
+    .upload-text {
+      font-size: 0.875rem;
+      color: hsl(var(--muted-foreground));
+      margin-bottom: 0.5rem;
+    }
+
+    .upload-hint {
+      font-size: 0.75rem;
+      color: hsl(var(--muted-foreground));
+    }
+
+    @media (max-width: 1024px) {
+      .form-container {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar-content {
+        order: -1;
+      }
+    }
+  </style>
+
+  {message && (
+    <div class={`alert alert-${message.type}`}>
+      {message.text}
+    </div>
+  )}
+
+  <form method="POST" id="newsForm">
+    <input type="hidden" name="csrf_token" value={sessionData?.csrfToken} />
+    <div class="form-container">
+      <!-- Main Content Area -->
+      <div class="main-content">
+        <div class="form-group">
+          <label for="title">Article Title <span style="color: hsl(0 84% 60%);">*</span></label>
+          <input
+            type="text"
+            id="title"
+            name="title"
+            value={formData.title || ''}
+            required
+            placeholder="Enter article title"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="excerpt">Excerpt</label>
+          <textarea
+            id="excerpt"
+            name="excerpt"
+            placeholder="Brief description of the article (optional)"
+            rows="3"
+          >{formData.excerpt || ''}</textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="content">Content <span style="color: hsl(0 84% 60%);">*</span></label>
+          <div class="editor-container">
+            <textarea
+              id="content"
+              name="content"
+              required
+            >{formData.content || ''}</textarea>
+          </div>
+        </div>
+
+        <!-- SEO Section -->
+        <div class="form-group" style="margin-top: 2rem;">
+          <h3 class="section-title">SEO Settings</h3>
+
+          <div class="form-group">
+            <label for="metaTitle">Meta Title</label>
+            <input
+              type="text"
+              id="metaTitle"
+              name="metaTitle"
+              placeholder="SEO title (defaults to article title)"
+              value={formData.seo?.metaTitle || ''}
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="metaDescription">Meta Description</label>
+            <textarea
+              id="metaDescription"
+              name="metaDescription"
+              placeholder="SEO description (defaults to excerpt)"
+              rows="2"
+            >{formData.seo?.metaDescription || ''}</textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="metaKeywords">Meta Keywords</label>
+            <input
+              type="text"
+              id="metaKeywords"
+              name="metaKeywords"
+              placeholder="Comma-separated keywords"
+              value={formData.seo?.metaKeywords || ''}
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="sidebar-content">
+        <!-- Auto-save Indicator -->
+        <div id="autosaveIndicator" class="autosave-indicator">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          <span id="autosaveText">Draft saved</span>
+        </div>
+
+        <!-- Publish Settings -->
+        <div class="sidebar-section">
+          <h3 class="section-title">Publish Settings</h3>
+
+          <div class="checkbox-group">
+            <input
+              type="checkbox"
+              id="published"
+              name="published"
+              checked={formData.published}
+            />
+            <label for="published">Publish immediately</label>
+          </div>
+
+          <div class="checkbox-group">
+            <input
+              type="checkbox"
+              id="featured"
+              name="featured"
+              checked={formData.featured}
+            />
+            <label for="featured">Featured article</label>
+          </div>
+
+          <div class="btn-group">
+            <button type="submit" class="btn btn-primary btn-full" name="action" value="save">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/>
+                <polyline points="7 3 7 8 15 8"/>
+              </svg>
+              Save Article
+            </button>
+          </div>
+        </div>
+
+        <!-- Article Details -->
+        <div class="sidebar-section">
+          <h3 class="section-title">Article Details</h3>
+
+          <div class="form-group">
+            <label for="author">Author</label>
+            <input
+              type="text"
+              id="author"
+              name="author"
+              placeholder="Author name"
+              value={formData.author || ''}
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="category">Category</label>
+            <input
+              type="text"
+              id="category"
+              name="category"
+              list="categories"
+              placeholder="Select or type category"
+              value={formData.category || ''}
+            />
+            <datalist id="categories">
+              {existingCategories.map(cat => (
+                <option value={cat} />
+              ))}
+            </datalist>
+          </div>
+
+          <div class="form-group">
+            <label for="tags">Tags</label>
+            <input
+              type="text"
+              id="tags"
+              name="tags"
+              placeholder="Comma-separated tags"
+              value={formData.tags?.join(', ') || ''}
+            />
+            <div class="tags-hint">
+              Existing: {existingTags.join(', ') || 'None yet'}
+            </div>
+          </div>
+        </div>
+
+        <!-- Featured Image -->
+        <div class="sidebar-section">
+          <h3 class="section-title">Featured Image</h3>
+          <MediaSelector inputName="featuredImage" inputId="featuredImage" mediaType="image" />
+        </div>
+
+        <!-- Actions -->
+        <div class="sidebar-section">
+          <a href="/admin/news" class="btn btn-outline btn-full">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m12 19-7-7 7-7"/>
+              <path d="M19 12H5"/>
+            </svg>
+            Cancel
+          </a>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <!-- TinyMCE Script -->
+  <script src={`https://cdn.tiny.cloud/1/${import.meta.env.PUBLIC_TINYMCE_API_KEY}/tinymce/6/tinymce.min.js`} referrerpolicy="origin"></script>
+  <script define:vars={{ tinyApiKey: import.meta.env.PUBLIC_TINYMCE_API_KEY }}>
+    tinymce.init({
+      selector: '#content',
+      api_key: tinyApiKey,
+      height: 500,
+      menubar: false,
+      plugins: [
+        'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+        'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+        'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
+      ],
+      toolbar: 'undo redo | blocks | ' +
+        'bold italic forecolor | alignleft aligncenter ' +
+        'alignright alignjustify | bullist numlist outdent indent | ' +
+        'link image media | removeformat | code fullscreen | help',
+      content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px }',
+      promotion: false,
+      branding: false,
+      relative_urls: false,
+      remove_script_host: false,
+      convert_urls: true,
+      image_uploadtab: false,
+      image_advtab: true,
+      image_dimensions: false,
+      image_class_list: [
+        {title: 'Responsive', value: 'img-responsive'},
+        {title: 'Rounded', value: 'img-rounded'}
+      ],
+      setup: function(editor) {
+        editor.on('change', function() {
+          editor.save();
+        });
+      }
+    });
+
+    // Auto-save functionality
+    let autoSaveTimer;
+    const autosaveIndicator = document.getElementById('autosaveIndicator');
+    const autosaveText = document.getElementById('autosaveText');
+
+    function showAutosave(saved = true) {
+      autosaveIndicator.classList.add('visible');
+      if (saved) {
+        autosaveIndicator.classList.add('saved');
+        autosaveText.textContent = 'Draft saved';
+      } else {
+        autosaveIndicator.classList.remove('saved');
+        autosaveText.textContent = 'Saving...';
+      }
+
+      setTimeout(() => {
+        autosaveIndicator.classList.remove('visible');
+      }, 2000);
+    }
+
+    document.getElementById('newsForm').addEventListener('input', function() {
+      clearTimeout(autoSaveTimer);
+      autoSaveTimer = setTimeout(() => {
+        // Save to localStorage
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData);
+        localStorage.setItem('newsFormDraft', JSON.stringify(data));
+        showAutosave(true);
+      }, 2000);
+    });
+
+    // Load draft on page load
+    window.addEventListener('load', function() {
+      const draft = localStorage.getItem('newsFormDraft');
+      if (draft && !window.location.search.includes('created=true')) {
+        if (confirm('A draft was found. Would you like to restore it?')) {
+          const data = JSON.parse(draft);
+          Object.keys(data).forEach(key => {
+            const field = document.querySelector(`[name="${key}"]`);
+            if (field && field.type !== 'checkbox') {
+              field.value = data[key];
+            } else if (field && field.type === 'checkbox') {
+              field.checked = data[key] === 'on';
+            }
+          });
+        }
+      }
+    });
+
+    // Clear draft on successful submission
+    document.getElementById('newsForm').addEventListener('submit', function() {
+      localStorage.removeItem('newsFormDraft');
+    });
+  </script>
+</AdminLayout>

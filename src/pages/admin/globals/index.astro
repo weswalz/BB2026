@@ -1,0 +1,53 @@
+---
+import AdminLayout from '../../../components/admin/AdminLayout.astro';
+import { requireAdministrator } from '../../../lib/auth-middleware.js';
+
+// Require administrator role for settings access
+const authRedirect = requireAdministrator(Astro);
+if (authRedirect) return authRedirect;
+
+const globals = [
+  { name: 'VIP Signup Form', url: '/admin/globals/vip-signup', description: 'Edit the content for the VIP signup form.' },
+];
+---
+
+<AdminLayout pageTitle="Edit Global Content">
+  <style>
+    .page-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+    .page-card {
+      background: var(--admin-bg-secondary);
+      border: 1px solid var(--admin-border-subtle);
+      border-radius: var(--admin-radius-lg);
+      box-shadow: var(--admin-shadow-sm);
+      padding: 1.5rem;
+      text-decoration: none;
+      color: var(--admin-text-primary);
+      transition: all var(--admin-transition-base);
+      display: block;
+    }
+    .page-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--admin-shadow-md);
+      border-color: var(--admin-border-default);
+    }
+    .page-card h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--admin-text-primary);
+      margin-bottom: 0.5rem;
+    }
+    .page-card p {
+      color: var(--admin-text-secondary);
+      font-size: 0.9rem;
+    }
+  </style>
+
+  <div class="page-grid">
+    {globals.map(global => (
+      <a href={global.url} class="page-card">
+        <h3>{global.name}</h3>
+        <p>{global.description}</p>
+      </a>
+    ))}
+  </div>
+</AdminLayout>

@@ -1,0 +1,175 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/sections/Header.astro';
+import Footer from '../../components/sections/Footer.astro';
+import BoxForUsSection from '../../components/sections/BoxForUsSection.astro';
+import { getPage } from '../../lib/pages.js';
+
+export const prerender = false;
+
+const PAGE_ID = 'about-us';
+const page = await getPage(PAGE_ID);
+const fields = page?.fields || {};
+const getField = (key, defaultValue = '') => fields[key] || defaultValue;
+---
+
+<Layout
+  title={getField('seoTitle', 'About Us - BiYu Promotions | Professional Boxing Promotion')}
+  description={getField('seoDescription', "BiYu Promotions is a multi-brand organization led by Bobby Harrison. With offices in Houston, Tampa, and Santo Domingo, we're dedicated to developing world-class fighters.")}
+>
+  <Header />
+  
+  <main class="min-h-screen">
+    <!-- Hero Section -->
+    <section class="relative h-[60vh] min-h-[400px] flex items-center justify-center text-white">
+      <div class="absolute inset-0 z-0">
+        <img
+          src={getField('heroImage', '/images/aboutushero.webp')}
+          alt="About BiYu Promotions"
+          class="w-full h-full object-cover"
+        />
+        <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70"></div>
+      </div>
+
+      <div class="relative z-10 container mx-auto px-4 text-center">
+        <h1 class="text-5xl md:text-7xl font-display font-bold mb-6 hero-text boxing-glow" set:html={getField('heroTitle', 'ABOUT US')}>
+        </h1>
+      </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="py-16 bg-black text-white">
+      <div class="container mx-auto px-4">
+        <div class="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+          <div>
+            <img
+              src={getField('aboutImage', '/images/aboutusfeature.webp')}
+              alt="BiYu Promotions Team"
+              class="w-full h-auto"
+              loading="lazy"
+            />
+          </div>
+          <div>
+            <h2 class="text-4xl font-display font-bold mb-6 text-[#FFD700]" set:html={getField('aboutTitle', 'ABOUT')}></h2>
+            <p class="text-lg mb-4 leading-relaxed">
+              {getField('aboutParagraph1', 'BiYu Promotions is a multi-brand organization dedicated to the sport of Boxing and is led by licensed promoter and manager Bobby Harrison. Harrison brings fifteen years of experience in Boxing and has been involved in entertainment for over 30 years.')}
+            </p>
+            <p class="text-lg mb-4 leading-relaxed">
+              {getField('aboutParagraph2', 'The organization includes various entertainment businesses and is now headquartered in Houston, Texas with offices in Tampa, Florida and Santo Domingo, Dominican Republic.')}
+            </p>
+            <p class="text-lg leading-relaxed">
+              {getField('aboutParagraph3', 'BiYu houses the BiYu Training Complex in Houston where professional and amateur fighters train under some of the best trainers in boxing.')}
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Our Experience Section -->
+    <section class="py-16 bg-black text-white">
+      <div class="container mx-auto px-4">
+        <div class="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+          <div class="order-2 lg:order-1">
+            <h2 class="text-4xl font-display font-bold mb-6 text-[#FFD700]" set:html={getField('experienceTitle', 'OUR EXPERIENCE')}></h2>
+            <p class="text-lg mb-4 leading-relaxed">
+              {getField('experienceParagraph1', 'Our professional team serves all fighting/boxing disciplines that surround the sport. We have developed working relationships with many of the premier venues around the country and world.')}
+            </p>
+            <p class="text-lg mb-4 leading-relaxed">
+              {getField('experienceParagraph2', 'The facility also houses our television production and event day management crews who have experience in sports entertainment.')}
+            </p>
+            <p class="text-lg leading-relaxed">
+              {getField('experienceParagraph3', 'BiYu Promotions and its brand companies bring audiences jaw-dropping boxing action around the world featuring top-tier fighters and contenders.')}
+            </p>
+          </div>
+          <div class="order-1 lg:order-2">
+            <img
+              src={getField('experienceImage', '/images/ourexperience.webp')}
+              alt="BiYu Promotions Boxing Events"
+              class="w-full h-auto"
+              loading="lazy"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Our Partners Section -->
+    <section class="py-16 bg-black text-white">
+      <div class="container mx-auto px-4">
+        <div class="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+          <div>
+            <img
+              src={getField('partnersImage', '/images/ourpartners.webp')}
+              alt="BiYu Promotions Partners"
+              class="w-full h-auto"
+              loading="lazy"
+            />
+          </div>
+          <div>
+            <h2 class="text-4xl font-display font-bold mb-6 text-[#FFD700]" set:html={getField('partnersTitle', 'OUR PARTNERS')}></h2>
+            <p class="text-lg mb-4 leading-relaxed">
+              {getField('partnersParagraph1', 'BiYu Promotions has an excellent track record/knowledge promoting and managing boxers – and providing a pathway to compete at the top-levels of boxing.')}
+            </p>
+            <p class="text-lg mb-4 leading-relaxed">
+              {getField('partnersParagraph2', 'We have developed relationships with world renowned sanctioning bodies such as the WBC and WBA as well as premier networks DAZN, beIN Sports and Fite TV.')}
+            </p>
+            <p class="text-lg leading-relaxed">
+              {getField('partnersParagraph3', 'BiYu Promotions is proud to have worked with world champions such as Juan Diaz, Reggie Johnson and more recently Sean Porter.')}
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Dominican Republic Boxing Section -->
+    <section class="py-16 bg-black text-white">
+      <div class="container mx-auto px-4">
+        <div class="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+          <div class="order-2 lg:order-1">
+            <h2 class="text-4xl font-display font-bold mb-6" set:html={getField('drTitle', 'A SHOWCASE FOR<br><span class="text-[#FFD700]">DOMINICAN REPUBLIC BOXING</span>')}></h2>
+            <p class="text-lg mb-4 leading-relaxed">
+              {getField('drParagraph1', 'BiYu Promotions is at the forefront of developing and showcasing boxing talents across all professional disciplines spanning multiple continents – most importantly the DR.')}
+            </p>
+            <p class="text-lg mb-4 leading-relaxed">
+              {getField('drParagraph2', 'We are determined to provide top-tier events showcasing some talents that may have been overlooked by larger boxing promotional companies that can\'t provide the personal touch that we provide.')}
+            </p>
+            <p class="text-lg leading-relaxed">
+              {getField('drParagraph3', 'Utilizing strategic partnerships, Top-caliber events, and premier venues, we provide consistent opportunities for fighters to showcase their talents.')}
+            </p>
+          </div>
+          <div class="order-1 lg:order-2">
+            <img
+              src={getField('drImage', '/images/dominican-republic-boxing.webp')}
+              alt="Dominican Republic Boxing"
+              class="w-full h-auto"
+              loading="lazy"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Core Aims Section -->
+    <section class="py-16 bg-black text-white">
+      <div class="container mx-auto px-4 text-center">
+        <h2 class="text-4xl font-display font-bold mb-12 text-[#FFD700]" set:html={getField('aimsTitle', 'OUR CORE AIMS ARE')}></h2>
+        <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div class="text-center">
+            <h3 class="text-xl font-bold mb-4">{getField('aim1', 'To identify young talent through our scouting network and training programs')}</h3>
+          </div>
+          <div class="text-center">
+            <h3 class="text-xl font-bold mb-4">{getField('aim2', 'To collaborate with top coaching and performance teams')}</h3>
+          </div>
+          <div class="text-center">
+            <h3 class="text-xl font-bold mb-4">{getField('aim3', 'To provide development opportunities rising stars, coaches and officials')}</h3>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <BoxForUsSection />
+    
+  </main>
+
+  <Footer />
+</Layout>

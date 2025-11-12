@@ -1,0 +1,117 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/sections/Header.astro';
+import Footer from '../components/sections/Footer.astro';
+import { getPage } from '../lib/pages.js';
+
+export const prerender = false;
+
+const PAGE_ID = '404';
+const page = await getPage(PAGE_ID);
+const fields = page?.fields || {};
+const getField = (key, defaultValue = '') => fields[key] || defaultValue;
+---
+
+<Layout 
+  title={getField('seoTitle', 'Page Not Found - Biyu Boxing')} 
+  description={getField('seoDescription', "The page you're looking for doesn't exist. Return to the homepage or explore our fighters and events.")}
+  noIndex={true}
+>
+  <Header />
+  
+  <main class="min-h-screen flex items-center">
+    <div class="container mx-auto px-4 py-16">
+      <div class="text-center max-w-2xl mx-auto">
+        <!-- 404 Visual -->
+        <div class="mb-12">
+          <div class="text-9xl md:text-[12rem] font-display font-black hero-text boxing-glow leading-none">
+            {getField('mainText', '404')}
+          </div>
+          <div class="text-2xl md:text-3xl font-display font-bold text-primary mt-4">
+            {getField('subtitle', 'Page Not Found')}
+          </div>
+        </div>
+        
+        <!-- Error Message -->
+        <div class="mb-12">
+          <h1 class="text-3xl md:text-4xl font-display font-bold mb-6 text-base-content">
+            {getField('heading', 'Looks like this page threw in the towel!')}
+          </h1>
+          <p class="text-lg text-base-content/80 leading-relaxed">
+            {getField('paragraph', "The page you're looking for doesn't exist or may have been moved. Don't worry though - there's plenty more to explore on our site.")}
+          </p>
+        </div>
+        
+        <!-- Navigation Options -->
+        <div class="space-y-6">
+          <!-- Primary Actions -->
+          <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a 
+              href="/" 
+              class="btn btn-primary btn-lg font-display font-semibold px-8"
+            >
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+              </svg>
+              {getField('homeButtonText', 'Back to Homepage')}
+            </a>
+            
+            <a 
+              href="/our-fighters/" 
+              class="btn btn-outline btn-lg font-display font-semibold px-8 border-primary hover:btn-primary"
+            >
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+              </svg>
+              {getField('fightersButtonText', 'Meet Our Fighters')}
+            </a>
+          </div>
+          
+          <!-- Quick Links -->
+          <div class="pt-8">
+            <div class="text-sm text-base-content/60 mb-4">{getField('quickLinksText', 'Or explore these popular sections:')}</div>
+            <div class="flex flex-wrap justify-center gap-4">
+              <a href="/news/" class="btn btn-ghost btn-sm hover:text-primary">
+                Latest News
+              </a>
+              <a href="/upcoming-events/" class="btn btn-ghost btn-sm hover:text-primary">
+                Upcoming Events
+              </a>
+              <a href="/box-for-us/" class="btn btn-ghost btn-sm hover:text-primary">
+                Box for Us
+              </a>
+              <a href="/about-us/" class="btn btn-ghost btn-sm hover:text-primary">
+                About Us
+              </a>
+              <a href="/contact-us/" class="btn btn-ghost btn-sm hover:text-primary">
+                Contact
+              </a>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Fun Boxing Quote -->
+        <div class="mt-16 pt-8 border-t border-primary/20">
+          <blockquote class="text-lg italic text-base-content/70">
+            {getField('quoteText', "\"It's not about how hard you hit. It's about how hard you can get hit and keep moving forward.\"")}
+          </blockquote>
+          <cite class="text-sm text-primary mt-2 block">{getField('quoteCite', '- Rocky Balboa')}</cite>
+        </div>
+      </div>
+    </div>
+  </main>
+  
+  <Footer />
+</Layout>
+
+<style>
+  /* Add some boxing-themed animations */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+  
+  .hero-text {
+    animation: float 3s ease-in-out infinite;
+  }
+</style>

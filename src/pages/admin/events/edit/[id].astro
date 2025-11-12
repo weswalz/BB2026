@@ -1,0 +1,329 @@
+---
+export const prerender = false;
+import AdminLayout from '../../../../components/admin/AdminLayout.astro';
+import MediaSelector from '../../../../components/admin/MediaSelector.astro';
+import { getEventById, updateEvent } from '../../../../lib/events.js';
+import { validateEvent, formatValidationErrors } from '../../../../lib/validation.js';
+import { verifySession } from '../../../../lib/auth.js';
+import { verifyCSRFToken, logAudit, getClientIP } from '../../../../lib/security.js';
+
+const { id } = Astro.params;
+
+// Get session data for CSRF token
+const sessionCookie = Astro.cookies.get('admin_session')?.value;
+const sessionData = verifySession(sessionCookie);
+
+let message = null;
+let event = await getEventById(id);
+
+if (!event) {
+  return Astro.redirect('/admin/events');
+}
+
+// Split location for form fields
+const locationParts = event.location?.split(',').map(p => p.trim()) || ['', ''];
+event.city = locationParts[0];
+event.country = locationParts[1];
+
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const csrfToken = formData.get('csrf_token');
+
+    // Verify CSRF token first
+    if (!verifyCSRFToken(sessionData, csrfToken)) {
+      message = { type: 'error', text: 'Invalid security token. Please refresh and try again.' };
+    } else {
+      const eventData = {
+        title: formData.get('title'),
+        description: formData.get('description') || null,
+        detailedDescription: formData.get('detailedDescription') || null,
+        date: formData.get('date'),
+        venue: formData.get('venue') || null,
+        city: formData.get('city') || null,
+        country: formData.get('country') || null,
+        ticketUrl: formData.get('ticketUrl') || null,
+        image: formData.get('image') || null,
+        status: formData.get('status') || 'upcoming',
+        featured: formData.get('featured') === 'on',
+      };
+
+      // Validate input
+      const validation = validateEvent(eventData, true);
+      if (!validation.success) {
+        message = {
+          type: 'error',
+          text: formatValidationErrors(validation.errors)
+        };
+      } else {
+        const updated = await updateEvent(id, validation.data);
+
+        if (updated) {
+          // Log audit event
+          const ipAddress = getClientIP(Astro.request);
+          logAudit({
+            username: sessionData.user.username,
+            action: 'UPDATE',
+            entityType: 'event',
+            entityId: id,
+            ipAddress
+          });
+
+          message = { type: 'success', text: 'Event updated successfully!' };
+          // Refresh event data
+          event = await getEventById(id);
+          // Split location again after refresh
+          const refreshedLocationParts = event.location?.split(',').map(p => p.trim()) || ['', ''];
+          event.city = refreshedLocationParts[0];
+          event.country = refreshedLocationParts[1];
+        } else {
+          message = { type: 'error', text: 'Failed to update event. Please try again.' };
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[ADMIN] Error updating event:', error);
+    message = { type: 'error', text: 'An error occurred. Please try again.' };
+  }
+}
+
+// Format date for datetime-local input
+function formatDateForInput(date) {
+  if (!date) return '';
+  const d = new Date(date);
+  return d.toISOString().slice(0, 16);
+}
+---
+
+<AdminLayout pageTitle="Edit Event">
+  <div slot="header-actions">
+    <a href="/admin/events" class="btn-secondary">
+      ← Back to Events
+    </a>
+  </div>
+
+  <style>
+    .form-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: var(--admin-bg-secondary);
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: var(--admin-text-primary);
+    }
+
+    input[type="text"],
+    input[type="url"],
+    input[type="date"],
+    input[type="datetime-local"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--admin-border-default);
+      border-radius: 4px;
+      font-size: 1rem;
+      background: var(--admin-bg-primary);
+      color: var(--admin-text-primary);
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    input[type="checkbox"] {
+      width: auto;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #F7DF5B, #B8941F);
+      color: #000;
+      padding: 0.75rem 1.5rem;
+      border: 1px solid #F7DF5B;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #FFE87C, #F7DF5B);
+      box-shadow: 0 0 30px rgba(247, 223, 91, 0.35);
+    }
+
+    .btn-secondary {
+      background: #6b7280;
+      color: white;
+      padding: 0.5rem 1rem;
+      text-decoration: none;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+
+    .btn-secondary:hover {
+      background: #4b5563;
+    }
+
+    .alert {
+      padding: 1rem;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+    }
+
+    .alert-success {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .alert-error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .help-text {
+      font-size: 0.875rem;
+      color: #6b7280;
+      margin-top: 0.25rem;
+    }
+
+    .current-image {
+      max-width: 200px;
+      margin-top: 1rem;
+    }
+
+    .current-image img {
+      width: 100%;
+      height: auto;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+  </style>
+
+  {message && (
+    <div class={`alert alert-${message.type}`}>
+      {message.text}
+    </div>
+  )}
+
+  <div class="form-container">
+    <form method="POST">
+      <input type="hidden" name="csrf_token" value={sessionData?.csrfToken} />
+      <div class="form-group">
+        <label for="title">Event Title *</label>
+        <input type="text" id="title" name="title" value={event.title} required />
+      </div>
+
+      <div class="form-group">
+        <label for="description">Short Description</label>
+        <textarea id="description" name="description"
+          placeholder="Brief description for event listings (max 500 chars)">{event.description}</textarea>
+        <div class="help-text">This appears on event listing pages</div>
+      </div>
+
+      <div class="form-group">
+        <label for="detailedDescription">Detailed Description</label>
+        <textarea id="detailedDescription" name="detailedDescription"
+          placeholder="Full event details for the event page (max 5000 chars)"
+          style="min-height: 200px;">{event.detailedDescription}</textarea>
+        <div class="help-text">This appears on the single event detail page</div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="date">Event Date *</label>
+          <input type="datetime-local" id="date" name="date" 
+            value={formatDateForInput(event.date)} required />
+          <div class="help-text">Date and time of the event</div>
+        </div>
+
+        <div class="form-group">
+          <label for="status">Status</label>
+          <select id="status" name="status">
+            <option value="upcoming" selected={event.status === 'upcoming'}>Upcoming</option>
+            <option value="past" selected={event.status === 'past'}>Past</option>
+            <option value="cancelled" selected={event.status === 'cancelled'}>Cancelled</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="venue">Venue</label>
+        <input type="text" id="venue" name="venue" value={event.venue}
+          placeholder="e.g., Club Hefe" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="city">City</label>
+          <input type="text" id="city" name="city" value={event.city} />
+        </div>
+
+        <div class="form-group">
+          <label for="country">Country</label>
+          <input type="text" id="country" name="country" value={event.country} placeholder="e.g., USA" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="ticketUrl">Ticket URL</label>
+        <input type="url" id="ticketUrl" name="ticketUrl" value={event.ticketUrl}
+          placeholder="https://..." />
+        <div class="help-text">Link to purchase tickets</div>
+      </div>
+
+      <div class="form-group">
+        <label>Event Flyer/Image</label>
+        {event.image && (
+          <div class="current-image">
+            <img src={event.image} alt="Current event image" />
+          </div>
+        )}
+        <MediaSelector 
+          inputName="image" 
+          inputId="image"
+          mediaType="image"
+          currentValue={event.image}
+        />
+        <div class="help-text">Select or upload an event flyer</div>
+      </div>
+
+      <div class="form-group">
+        <div class="checkbox-group">
+          <input type="checkbox" id="featured" name="featured" checked={event.featured} />
+          <label for="featured">Featured Event</label>
+        </div>
+        <div class="help-text">Featured events are displayed prominently on the homepage</div>
+      </div>
+
+      <div class="form-group">
+        <button type="submit" class="btn-primary">Update Event</button>
+      </div>
+    </form>
+  </div>
+</AdminLayout>

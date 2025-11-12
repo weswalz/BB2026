@@ -1,0 +1,723 @@
+---
+export const prerender = false;
+import AdminLayout from '../../../../components/admin/AdminLayout.astro';
+import MediaSelector from '../../../../components/admin/MediaSelector.astro';
+import { getNewsById, updateNews, togglePublishStatus } from '../../../../lib/news.js';
+import { validateNews, formatValidationErrors } from '../../../../lib/validation.js';
+import { verifySession } from '../../../../lib/auth.js';
+import { verifyCSRFToken, logAudit, getClientIP } from '../../../../lib/security.js';
+
+const { id } = Astro.params;
+
+// Get session data for CSRF token
+const sessionCookie = Astro.cookies.get('admin_session')?.value;
+const sessionData = verifySession(sessionCookie);
+
+// Check if this is a new article that was just created
+const url = new URL(Astro.request.url);
+const justCreated = url.searchParams.get('created') === 'true';
+
+let message = null;
+let article = null;
+
+// Validate ID
+try {
+  article = await getNewsById(id);
+  if (!article) {
+    return Astro.redirect('/admin/news');
+  }
+} catch (error) {
+  console.error('Error fetching article:', error);
+  return Astro.redirect('/admin/news');
+}
+
+// Handle form submission
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const csrfToken = formData.get('csrf_token');
+    const action = formData.get('action');
+
+    // Verify CSRF token first
+    if (!verifyCSRFToken(sessionData, csrfToken)) {
+      message = { type: 'error', text: 'Invalid security token. Please refresh and try again.' };
+    } else {
+      if (action === 'toggle-publish') {
+        await togglePublishStatus(id);
+        // Refresh article data
+        article = await getNewsById(id);
+
+        // Log audit event
+        const ipAddress = getClientIP(Astro.request);
+        logAudit({
+          username: sessionData.user.username,
+          action: 'UPDATE',
+          entityType: 'news',
+          entityId: id,
+          changes: { published: article.published },
+          ipAddress
+        });
+
+        message = {
+          type: 'success',
+          text: article.published ? 'Article published!' : 'Article unpublished!'
+        };
+      } else {
+        const updateData = {
+          title: formData.get('title'),
+          content: formData.get('content'),
+          excerpt: formData.get('excerpt') || null,
+          category: formData.get('category') || 'General',
+          tags: formData.get('tags')?.split(',').map(t => t.trim()).filter(t => t) || [],
+          author: formData.get('author') || 'BiYu Promotions',
+          published: formData.get('published') === 'on',
+          featured: formData.get('featured') === 'on',
+          featuredImage: formData.get('featuredImage') || null,
+          seo: {
+            metaTitle: formData.get('metaTitle') || null,
+            metaDescription: formData.get('metaDescription') || null,
+          }
+        };
+
+        // Validate input
+        const validation = validateNews(updateData, true);
+        if (!validation.success) {
+          message = {
+            type: 'error',
+            text: formatValidationErrors(validation.errors)
+          };
+        } else {
+          await updateNews(id, validation.data);
+
+          // Log audit event
+          const ipAddress = getClientIP(Astro.request);
+          logAudit({
+            username: sessionData.user.username,
+            action: 'UPDATE',
+            entityType: 'news',
+            entityId: id,
+            ipAddress
+          });
+
+          // Refresh article data
+          article = await getNewsById(id);
+          message = { type: 'success', text: 'Article updated successfully!' };
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error updating article:', error);
+    message = { type: 'error', text: 'Failed to update article. Please try again.' };
+  }
+}
+
+// Show created message if just created
+if (justCreated && !message) {
+  message = { type: 'success', text: 'Article created successfully!' };
+}
+---
+
+<AdminLayout pageTitle="Edit News Article">
+  <style>
+    .form-container {
+      display: grid;
+      grid-template-columns: 1fr 350px;
+      gap: 2rem;
+    }
+
+    .main-content {
+      background: hsl(var(--card));
+      border: 1px solid hsl(var(--border));
+      padding: 2rem;
+      border-radius: 8px;
+    }
+
+    .sidebar-content {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .sidebar-section {
+      background: hsl(var(--card));
+      border: 1px solid hsl(var(--border));
+      padding: 1.5rem;
+      border-radius: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: hsl(var(--foreground));
+      font-size: 0.875rem;
+    }
+
+    input[type="text"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 0.625rem 0.75rem;
+      border: 1px solid hsl(var(--border));
+      border-radius: 6px;
+      font-size: 0.875rem;
+      background: hsl(var(--background));
+      color: hsl(var(--foreground));
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: hsl(var(--ring));
+      box-shadow: 0 0 0 3px hsl(var(--ring) / 0.1);
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: hsl(var(--muted-foreground));
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+      font-family: inherit;
+    }
+
+    .editor-container {
+      min-height: 400px;
+      border: 1px solid hsl(var(--border));
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .checkbox-group:last-child {
+      margin-bottom: 0;
+    }
+
+    input[type="checkbox"] {
+      margin-right: 0.625rem;
+      width: 1.125rem;
+      height: 1.125rem;
+      cursor: pointer;
+    }
+
+    .checkbox-group label {
+      margin-bottom: 0;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+
+    .section-title {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: hsl(var(--foreground));
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid hsl(var(--border));
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .btn {
+      padding: 0.625rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      flex: 1;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #F7DF5B, #B8941F);
+      color: #000;
+      border: 1px solid #F7DF5B;
+      font-weight: 600;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #FFE87C, #F7DF5B);
+      box-shadow: 0 0 30px rgba(247, 223, 91, 0.35);
+    }
+
+    .btn-success {
+      background: hsl(142 76% 36%);
+      color: white;
+      border-color: hsl(142 76% 36%);
+    }
+
+    .btn-success:hover {
+      background: hsl(142 76% 30%);
+    }
+
+    .btn-warning {
+      background: hsl(38 92% 50%);
+      color: white;
+      border-color: hsl(38 92% 50%);
+    }
+
+    .btn-warning:hover {
+      background: hsl(38 92% 45%);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: hsl(var(--foreground));
+      border-color: hsl(var(--border));
+    }
+
+    .btn-outline:hover {
+      background: hsl(var(--accent));
+    }
+
+    .btn-full {
+      width: 100%;
+    }
+
+    .meta-info {
+      background: hsl(var(--muted) / 0.3);
+      padding: 1rem;
+      border-radius: 6px;
+      font-size: 0.8125rem;
+      color: hsl(var(--muted-foreground));
+    }
+
+    .meta-info strong {
+      color: hsl(var(--foreground));
+      font-weight: 600;
+    }
+
+    .meta-row {
+      margin-bottom: 0.5rem;
+    }
+
+    .meta-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.875rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .status-published {
+      background: hsl(142 76% 36% / 0.1);
+      color: hsl(142 76% 36%);
+      border: 1px solid hsl(142 76% 36% / 0.2);
+    }
+
+    .status-published .status-dot {
+      background: hsl(142 76% 36%);
+      box-shadow: 0 0 0 2px hsl(142 76% 36% / 0.3);
+    }
+
+    .status-draft {
+      background: hsl(45 93% 47% / 0.1);
+      color: hsl(45 93% 47%);
+      border: 1px solid hsl(45 93% 47% / 0.2);
+    }
+
+    .status-draft .status-dot {
+      background: hsl(45 93% 47%);
+      box-shadow: 0 0 0 2px hsl(45 93% 47% / 0.3);
+    }
+
+    .preview-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: hsl(var(--primary));
+      text-decoration: none;
+      font-size: 0.8125rem;
+      margin-top: 0.75rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .preview-link:hover {
+      color: hsl(var(--primary) / 0.8);
+      text-decoration: underline;
+    }
+
+    .version-history {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid hsl(var(--border));
+    }
+
+    .version-history-title {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: hsl(var(--foreground));
+      margin-bottom: 0.5rem;
+    }
+
+    .version-item {
+      font-size: 0.75rem;
+      color: hsl(var(--muted-foreground));
+      padding: 0.5rem;
+      background: hsl(var(--muted) / 0.3);
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+    }
+
+    .version-item:last-child {
+      margin-bottom: 0;
+    }
+
+    @media (max-width: 1024px) {
+      .form-container {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar-content {
+        order: -1;
+      }
+
+      .btn-group {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+
+  {message && (
+    <div class={`alert alert-${message.type}`}>
+      {message.text}
+    </div>
+  )}
+
+  <form method="POST" id="newsForm">
+    <input type="hidden" name="csrf_token" value={sessionData?.csrfToken} />
+    <div class="form-container">
+      <!-- Main Content Area -->
+      <div class="main-content">
+        <div class="form-group">
+          <label for="title">Article Title <span style="color: hsl(0 84% 60%);">*</span></label>
+          <input
+            type="text"
+            id="title"
+            name="title"
+            value={article.title}
+            required
+            placeholder="Enter article title"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="excerpt">Excerpt</label>
+          <textarea
+            id="excerpt"
+            name="excerpt"
+            placeholder="Brief description of the article (optional)"
+            rows="3"
+          >{article.excerpt || ''}</textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="content">Content <span style="color: hsl(0 84% 60%);">*</span></label>
+          <div class="editor-container">
+            <textarea
+              id="content"
+              name="content"
+              required
+            >{article.content || ''}</textarea>
+          </div>
+        </div>
+
+        <!-- SEO Section -->
+        <div class="form-group" style="margin-top: 2rem;">
+          <h3 class="section-title">SEO Settings</h3>
+
+          <div class="form-group">
+            <label for="metaTitle">Meta Title</label>
+            <input
+              type="text"
+              id="metaTitle"
+              name="metaTitle"
+              placeholder="SEO title (defaults to article title)"
+              value={article.seo?.metaTitle || ''}
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="metaDescription">Meta Description</label>
+            <textarea
+              id="metaDescription"
+              name="metaDescription"
+              placeholder="SEO description (defaults to excerpt)"
+              rows="2"
+            >{article.seo?.metaDescription || ''}</textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="metaKeywords">Meta Keywords</label>
+            <input
+              type="text"
+              id="metaKeywords"
+              name="metaKeywords"
+              placeholder="Comma-separated keywords"
+              value={article.seo?.metaKeywords || ''}
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="sidebar-content">
+        <!-- Status Section -->
+        <div class="sidebar-section">
+          <h3 class="section-title">Status</h3>
+
+          <div class={`status-badge status-${article.published ? 'published' : 'draft'}`}>
+            <span class="status-dot"></span>
+            {article.published ? 'Published' : 'Draft'}
+          </div>
+
+          {article.slug && (
+            <div class="meta-info">
+              <div class="meta-row">
+                <strong>URL Slug:</strong><br/>
+                <code style="font-size: 0.75rem;">{article.slug}</code>
+              </div>
+              {article.published && (
+                <a href={`/news/${article.slug}`} target="_blank" class="preview-link">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                    <polyline points="15 3 21 3 21 9"/>
+                    <line x1="10" x2="21" y1="14" y2="3"/>
+                  </svg>
+                  View Live Article
+                </a>
+              )}
+            </div>
+          )}
+
+          <div class="meta-info" style="margin-top: 1rem;">
+            <div class="meta-row">
+              <strong>Created:</strong> {new Date(article.createdAt).toLocaleString()}
+            </div>
+            <div class="meta-row">
+              <strong>Updated:</strong> {new Date(article.updatedAt).toLocaleString()}
+            </div>
+            {article.publishedAt && (
+              <div class="meta-row">
+                <strong>Published:</strong> {new Date(article.publishedAt).toLocaleString()}
+              </div>
+            )}
+          </div>
+
+          <!-- Version History -->
+          <div class="version-history">
+            <div class="version-history-title">Version History</div>
+            <div class="version-item">
+              Last modified: {new Date(article.updatedAt).toLocaleDateString()}
+            </div>
+            {article.publishedAt && (
+              <div class="version-item">
+                Published: {new Date(article.publishedAt).toLocaleDateString()}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <!-- Publish Settings -->
+        <div class="sidebar-section">
+          <h3 class="section-title">Publish Settings</h3>
+
+          <div class="checkbox-group">
+            <input
+              type="checkbox"
+              id="published"
+              name="published"
+              checked={article.published}
+            />
+            <label for="published">Published</label>
+          </div>
+
+          <div class="checkbox-group">
+            <input
+              type="checkbox"
+              id="featured"
+              name="featured"
+              checked={article.featured}
+            />
+            <label for="featured">Featured article</label>
+          </div>
+
+          <div class="btn-group">
+            <button type="submit" class="btn btn-primary" name="action" value="save">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/>
+                <polyline points="7 3 7 8 15 8"/>
+              </svg>
+              Update
+            </button>
+            <button type="submit" class="btn {article.published ? 'btn-warning' : 'btn-success'}" name="action" value="toggle-publish">
+              {article.published ? (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21.2 15c.7-1.2 1-2.5.7-3.9-.6-2-2.4-3.5-4.4-3.5h-1.2c-.7-3-3.2-5.2-6.2-5.6-3-.3-5.9 1.3-7.3 4-1.2 2.5-1 5.4.5 7.7"/>
+                    <path d="M12 13v8"/>
+                    <path d="m8 17 4 4 4-4"/>
+                  </svg>
+                  Unpublish
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 13v8"/>
+                    <path d="M12 3v3"/>
+                    <path d="m8 17 4-4 4 4"/>
+                  </svg>
+                  Publish
+                </>
+              )}
+            </button>
+          </div>
+
+          {article.published && (
+            <a href={`/news/${article.slug}`} target="_blank" class="btn btn-outline btn-full" style="margin-top: 0.75rem;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              Preview
+            </a>
+          )}
+        </div>
+
+        <!-- Article Details -->
+        <div class="sidebar-section">
+          <h3 class="section-title">Article Details</h3>
+
+          <div class="form-group">
+            <label for="author">Author</label>
+            <input
+              type="text"
+              id="author"
+              name="author"
+              placeholder="Author name"
+              value={article.author || ''}
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="category">Category</label>
+            <input
+              type="text"
+              id="category"
+              name="category"
+              placeholder="Enter category"
+              value={article.category || ''}
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="tags">Tags</label>
+            <input
+              type="text"
+              id="tags"
+              name="tags"
+              placeholder="Comma-separated tags"
+              value={Array.isArray(article.tags) ? article.tags.join(', ') : (article.tags || '')}
+            />
+          </div>
+        </div>
+
+        <!-- Featured Image -->
+        <div class="sidebar-section">
+          <h3 class="section-title">Featured Image</h3>
+          <MediaSelector inputName="featuredImage" inputId="featuredImage" mediaType="image" initialValue={article.featuredImage} />
+        </div>
+
+        <!-- Actions -->
+        <div class="sidebar-section">
+          <a href="/admin/news" class="btn btn-outline btn-full">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m12 19-7-7 7-7"/>
+              <path d="M19 12H5"/>
+            </svg>
+            Back to News
+          </a>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <!-- TinyMCE Script -->
+  <script src={`https://cdn.tiny.cloud/1/${import.meta.env.PUBLIC_TINYMCE_API_KEY}/tinymce/6/tinymce.min.js`} referrerpolicy="origin"></script>
+  <script is:inline define:vars={{ articleContent: article.content || '', tinyApiKey: import.meta.env.PUBLIC_TINYMCE_API_KEY }}>
+    tinymce.init({
+      selector: '#content',
+      api_key: tinyApiKey,
+      height: 500,
+      menubar: false,
+      plugins: [
+        'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+        'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+        'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
+      ],
+      toolbar: 'undo redo | blocks | ' +
+        'bold italic forecolor | alignleft aligncenter ' +
+        'alignright alignjustify | bullist numlist outdent indent | ' +
+        'link image media | removeformat | code fullscreen | help',
+      content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px }',
+      promotion: false,
+      branding: false,
+      relative_urls: false,
+      remove_script_host: false,
+      convert_urls: true,
+      setup: function(editor) {
+        editor.on('change', function() {
+          editor.save();
+        });
+      }
+    });
+  </script>
+</AdminLayout>

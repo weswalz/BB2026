@@ -1,0 +1,243 @@
+---
+export interface Props {
+  variant?: 'contact' | 'fighter' | 'vip';
+}
+
+const { variant = 'contact' } = Astro.props;
+---
+
+{variant === 'contact' && (
+  <form class="space-y-6">
+    <div>
+      <label for="name" class="block text-sm font-medium mb-2">Name</label>
+      <input 
+        type="text" 
+        id="name" 
+        name="name" 
+        class="input input-bordered w-full" 
+        required 
+      />
+    </div>
+    
+    <div>
+      <label for="email" class="block text-sm font-medium mb-2">Email</label>
+      <input 
+        type="email" 
+        id="email" 
+        name="email" 
+        class="input input-bordered w-full" 
+        required 
+      />
+    </div>
+    
+    <div>
+      <label for="message" class="block text-sm font-medium mb-2">Message</label>
+      <textarea 
+        id="message" 
+        name="message" 
+        rows="5" 
+        class="textarea textarea-bordered w-full" 
+        required
+      ></textarea>
+    </div>
+    
+    <button type="submit" class="btn btn-primary w-full">Send Message</button>
+  </form>
+)}
+
+{variant === 'vip' && (
+  <form class="space-y-4">
+    <div class="grid md:grid-cols-2 gap-4">
+      <div>
+        <label for="vip-firstname" class="block text-sm font-medium mb-2">First Name</label>
+        <input 
+          type="text" 
+          id="vip-firstname" 
+          name="firstname" 
+          class="input input-bordered w-full" 
+          required 
+        />
+      </div>
+      
+      <div>
+        <label for="vip-lastname" class="block text-sm font-medium mb-2">Last Name</label>
+        <input 
+          type="text" 
+          id="vip-lastname" 
+          name="lastname" 
+          class="input input-bordered w-full" 
+          required 
+        />
+      </div>
+    </div>
+    
+    <div>
+      <label for="vip-email" class="block text-sm font-medium mb-2">Email</label>
+      <input 
+        type="email" 
+        id="vip-email" 
+        name="email" 
+        class="input input-bordered w-full" 
+        required 
+      />
+    </div>
+    
+    <div>
+      <label for="vip-birthday" class="block text-sm font-medium mb-2">Birthday (Optional)</label>
+      <input 
+        type="date" 
+        id="vip-birthday" 
+        name="birthday" 
+        class="input input-bordered w-full" 
+      />
+    </div>
+    
+    <button type="submit" class="btn btn-primary w-full">Join VIP List</button>
+  </form>
+)}
+
+{variant === 'fighter' && (
+  <form class="space-y-6">
+    <div class="grid md:grid-cols-2 gap-4">
+      <div>
+        <label for="fighter-name" class="block text-sm font-medium mb-2">Full Name</label>
+        <input 
+          type="text" 
+          id="fighter-name" 
+          name="name" 
+          class="input input-bordered w-full" 
+          required 
+        />
+      </div>
+      
+      <div>
+        <label for="fighter-age" class="block text-sm font-medium mb-2">Age</label>
+        <input 
+          type="number" 
+          id="fighter-age" 
+          name="age" 
+          class="input input-bordered w-full" 
+          required 
+        />
+      </div>
+    </div>
+    
+    <div class="grid md:grid-cols-2 gap-4">
+      <div>
+        <label for="fighter-hometown" class="block text-sm font-medium mb-2">Hometown</label>
+        <input 
+          type="text" 
+          id="fighter-hometown" 
+          name="hometown" 
+          class="input input-bordered w-full" 
+          required 
+        />
+      </div>
+      
+      <div>
+        <label for="fighter-weight" class="block text-sm font-medium mb-2">Weight Division</label>
+        <input 
+          type="text" 
+          id="fighter-weight" 
+          name="weight_division" 
+          class="input input-bordered w-full" 
+          required 
+        />
+      </div>
+    </div>
+    
+    <div class="grid md:grid-cols-2 gap-4">
+      <div>
+        <label for="fighter-email" class="block text-sm font-medium mb-2">Email</label>
+        <input 
+          type="email" 
+          id="fighter-email" 
+          name="email" 
+          class="input input-bordered w-full" 
+          required 
+        />
+      </div>
+      
+      <div>
+        <label for="fighter-phone" class="block text-sm font-medium mb-2">Phone</label>
+        <input 
+          type="tel" 
+          id="fighter-phone" 
+          name="phone" 
+          class="input input-bordered w-full" 
+          required 
+        />
+      </div>
+    </div>
+    
+    <div>
+      <label for="fighter-social" class="block text-sm font-medium mb-2">Social Media (Optional)</label>
+      <input 
+        type="text" 
+        id="fighter-social" 
+        name="social_media" 
+        class="input input-bordered w-full" 
+        placeholder="@username"
+      />
+    </div>
+    
+    <div>
+      <label for="fighter-amateur" class="block text-sm font-medium mb-2">Amateur Career</label>
+      <textarea 
+        id="fighter-amateur" 
+        name="amateur_career" 
+        rows="3" 
+        class="textarea textarea-bordered w-full" 
+        placeholder="Describe your amateur boxing experience..."
+      ></textarea>
+    </div>
+    
+    <div>
+      <label for="fighter-pro" class="block text-sm font-medium mb-2">Professional Career (if applicable)</label>
+      <textarea 
+        id="fighter-pro" 
+        name="pro_career" 
+        rows="3" 
+        class="textarea textarea-bordered w-full" 
+        placeholder="Describe your professional boxing experience..."
+      ></textarea>
+    </div>
+    
+    <div>
+      <label for="fighter-titles" class="block text-sm font-medium mb-2">Significant Titles & Victories</label>
+      <textarea 
+        id="fighter-titles" 
+        name="titles" 
+        rows="2" 
+        class="textarea textarea-bordered w-full" 
+        placeholder="List any championships or notable wins..."
+      ></textarea>
+    </div>
+    
+    <div>
+      <label for="fighter-motivation" class="block text-sm font-medium mb-2">Career Motivation</label>
+      <textarea 
+        id="fighter-motivation" 
+        name="motivation" 
+        rows="3" 
+        class="textarea textarea-bordered w-full" 
+        placeholder="What motivates you in your boxing career?"
+        required
+      ></textarea>
+    </div>
+    
+    <div>
+      <label for="fighter-why" class="block text-sm font-medium mb-2">Why BiYu Promotions?</label>
+      <textarea 
+        id="fighter-why" 
+        name="why_biyu" 
+        rows="3" 
+        class="textarea textarea-bordered w-full" 
+        placeholder="Why do you want to join BiYu Promotions?"
+        required
+      ></textarea>
+    </div>
+    
+    <button type="submit" class="btn btn-primary w-full btn-lg">Submit Application</button>
+  </form>
+)}

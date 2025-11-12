@@ -1,0 +1,368 @@
+---
+export interface Props {
+  inputName: string;
+  inputId?: string;
+  mediaType?: string;
+  initialValue?: string;
+}
+
+const { inputName, initialValue = '' } = Astro.props;
+
+// Fetch all media items for the selector
+let mediaItems = [];
+try {
+  const response = await fetch(Astro.url.origin + '/api/media');
+  if (response.ok) {
+    mediaItems = await response.json();
+  } else {
+    console.error('Failed to fetch media for selector');
+  }
+} catch (error) {
+  console.error('Error fetching media for selector:', error);
+}
+---
+
+<div class="form-group media-selector" data-selector-id={inputName}>
+  <input type="hidden" id={inputName} name={inputName} value={initialValue} />
+
+  <div class="media-preview">
+    {initialValue ? (
+      <img src={initialValue} alt="Selected Media" class="preview-image w-32 h-32 object-contain border rounded" />
+    ) : (
+      <img src="" alt="Selected Media" class="preview-image w-32 h-32 object-contain border rounded hidden" />
+    )}
+    <div class="no-image-placeholder w-32 h-32 border rounded flex items-center justify-center text-gray-400 text-sm text-center" style={initialValue ? 'display: none;' : ''}>
+      No Image Selected
+    </div>
+  </div>
+  
+  <div class="flex gap-2 mt-2">
+    <button type="button" class="btn btn-outline select-media-btn">
+      Select Media
+    </button>
+    <button type="button" class="btn btn-primary upload-media-btn">
+      Upload New
+    </button>
+  </div>
+
+  <input type="file" accept="image/*" class="hidden" data-upload-input />
+
+  <div class="media-modal hidden">
+    <div class="media-modal-content">
+      <button type="button" class="close-modal-btn">&times;</button>
+      <h3>Select an Image</h3>
+      <div class="media-grid">
+        {mediaItems.map(item => (
+          <div class="media-item" data-url={item.url}>
+            <img src={item.url} alt={item.originalName} />
+            <p>{item.originalName}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .media-selector {
+    margin-bottom: 1.5rem;
+  }
+  .media-preview {
+    position: relative;
+    display: inline-block;
+  }
+  .media-preview img {
+    max-width: 100%;
+    height: auto;
+  }
+  .w-32 {
+    width: 8rem !important;
+  }
+  .h-32 {
+    height: 8rem !important;
+  }
+  .object-contain {
+    object-fit: contain;
+  }
+  .border {
+    border: 1px solid var(--admin-border-subtle);
+  }
+  .rounded {
+    border-radius: 4px;
+  }
+  .flex {
+    display: flex;
+  }
+  .items-center {
+    align-items: center;
+  }
+  .justify-center {
+    justify-content: center;
+  }
+  .text-gray-400 {
+    color: #9ca3af;
+  }
+  .text-sm {
+    font-size: 0.875rem;
+  }
+  .text-center {
+    text-align: center;
+  }
+  .gap-2 {
+    gap: 0.5rem;
+  }
+  .mt-2 {
+    margin-top: 0.5rem;
+  }
+  .hidden {
+    display: none !important;
+  }
+  .btn {
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--admin-border-subtle);
+    color: var(--admin-text-primary);
+  }
+  .btn-outline:hover {
+    background: var(--admin-bg-tertiary);
+    border-color: var(--admin-accent-primary);
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #F7DF5B, #B8941F);
+    color: #000;
+    border: 1px solid #F7DF5B;
+  }
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #FFE87C, #F7DF5B);
+    transform: translateY(-1px);
+    box-shadow: 0 0 20px rgba(247, 223, 91, 0.3);
+  }
+  .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+  .media-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  .media-modal.hidden {
+    display: none;
+  }
+  .media-modal-content {
+    background: var(--admin-bg-secondary);
+    padding: 2rem;
+    border-radius: 8px;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+    color: var(--admin-text-primary);
+  }
+  .close-modal-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 2rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  .media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  .media-item {
+    border: 2px solid transparent;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 4px;
+  }
+  .media-item:hover {
+    border-color: #0073aa;
+  }
+  .media-item.selected {
+    border-color: #0073aa;
+    box-shadow: 0 0 0 3px rgba(0,115,170,0.3);
+  }
+  .media-item img {
+    max-width: 100%;
+    height: 80px;
+    object-fit: contain;
+  }
+</style>
+
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Initialize each media selector independently
+    document.querySelectorAll('.media-selector').forEach((mediaSelector) => {
+      const selectBtn = mediaSelector.querySelector('.select-media-btn');
+      const uploadBtn = mediaSelector.querySelector('.upload-media-btn');
+      const fileInput = mediaSelector.querySelector('[data-upload-input]');
+      const modal = mediaSelector.querySelector('.media-modal');
+      const closeModalBtn = mediaSelector.querySelector('.close-modal-btn');
+      const mediaGrid = mediaSelector.querySelector('.media-grid');
+      const hiddenInput = mediaSelector.querySelector('input[type="hidden"]');
+      const previewImg = mediaSelector.querySelector('.preview-image');
+      const noImagePlaceholder = mediaSelector.querySelector('.no-image-placeholder');
+
+      // Function to update preview with retry logic for dev server
+      function updatePreview(url, retries = 3) {
+        hiddenInput.value = url;
+
+        if (previewImg) {
+          // Set src immediately
+          previewImg.src = url;
+          previewImg.classList.remove('hidden');
+
+          // Handle 404 errors with retry (for dev server delay)
+          previewImg.onerror = () => {
+            if (retries > 0 && url.startsWith('/uploads/')) {
+              // Retry after a short delay
+              setTimeout(() => {
+                console.log(`Retrying image load (${retries} attempts left):`, url);
+                updatePreview(url, retries - 1);
+              }, 500);
+            }
+          };
+
+          // Clear error handler on successful load
+          previewImg.onload = () => {
+            previewImg.onerror = null;
+          };
+        }
+
+        if (noImagePlaceholder) {
+          noImagePlaceholder.style.display = 'none';
+        }
+      }
+
+      // Open media selection modal
+      selectBtn.addEventListener('click', () => {
+        modal.classList.remove('hidden');
+      });
+
+      // Close modal
+      closeModalBtn.addEventListener('click', () => {
+        modal.classList.add('hidden');
+      });
+
+      // Upload button triggers file input
+      uploadBtn.addEventListener('click', () => {
+        fileInput.click();
+      });
+
+      // Handle file selection and upload
+      fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Show loading state
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = 'Uploading...';
+
+        try {
+          const formData = new FormData();
+          formData.append('file', file);
+
+          const response = await fetch('/api/media/upload', {
+            method: 'POST',
+            body: formData
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            // Upload successful - update preview
+            const mediaUrl = result.media.url;
+            updatePreview(mediaUrl);
+
+            // Wait for dev server to pick up the file, then add to grid
+            setTimeout(() => {
+              const newMediaItem = document.createElement('div');
+              newMediaItem.className = 'media-item';
+              newMediaItem.dataset.url = mediaUrl;
+
+              const img = document.createElement('img');
+              img.alt = result.media.originalName;
+
+              const p = document.createElement('p');
+              p.textContent = result.media.originalName;
+
+              // Set image source with retry logic for dev server delays
+              let retryCount = 0;
+              const maxRetries = 5;
+
+              img.onerror = () => {
+                if (retryCount < maxRetries) {
+                  retryCount++;
+                  console.log(`Grid image load attempt ${retryCount}/${maxRetries}`);
+                  setTimeout(() => {
+                    img.src = mediaUrl + '?t=' + Date.now(); // Cache bust
+                  }, 1000 * retryCount); // Increasing delay: 1s, 2s, 3s...
+                } else {
+                  console.error('Failed to load grid image after max retries');
+                }
+              };
+
+              img.onload = () => {
+                console.log('Image uploaded and loaded successfully:', mediaUrl);
+              };
+
+              img.src = mediaUrl;
+
+              newMediaItem.appendChild(img);
+              newMediaItem.appendChild(p);
+              mediaGrid.insertBefore(newMediaItem, mediaGrid.firstChild);
+            }, 1000);
+          } else {
+            console.error('Upload failed:', result.message);
+            alert('Upload failed: ' + result.message);
+          }
+        } catch (error) {
+          console.error('Upload error:', error);
+          alert('Upload failed. Please try again.');
+        } finally {
+          // Reset button state
+          uploadBtn.disabled = false;
+          uploadBtn.textContent = 'Upload New';
+          fileInput.value = ''; // Clear file input
+        }
+      });
+
+      // Select media from grid
+      mediaGrid.addEventListener('click', (e) => {
+        const targetItem = e.target.closest('.media-item');
+        if (targetItem) {
+          // Remove selected class from all items
+          mediaGrid.querySelectorAll('.media-item').forEach(item => {
+            item.classList.remove('selected');
+          });
+          // Add selected class to clicked item
+          targetItem.classList.add('selected');
+
+          const selectedUrl = targetItem.dataset.url;
+          updatePreview(selectedUrl);
+          modal.classList.add('hidden');
+        }
+      });
+    });
+  });
+</script>

@@ -1,0 +1,18 @@
+---
+const FloatingCTA = (await import('./motion/FloatingCTA.tsx')).default;
+
+export interface Props {
+  href: string;
+  text: string;
+  showAfterScroll?: number;
+}
+
+const { href, text, showAfterScroll = 200 } = Astro.props;
+---
+
+<FloatingCTA 
+  href={href} 
+  text={text} 
+  showAfterScroll={showAfterScroll} 
+  client:load
+/>

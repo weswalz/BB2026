@@ -1,0 +1,106 @@
+---
+import AdminLayout from '../../../components/admin/AdminLayout.astro';
+import { getPage, updatePage } from '../../../lib/pages.js';
+
+const PAGE_ID = '404';
+let message = null;
+
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  const fields = Object.fromEntries(formData.entries());
+  const success = await updatePage(PAGE_ID, fields);
+  message = success ? { type: 'success', text: '404 page updated successfully!' } : { type: 'error', text: 'Failed to update page.' };
+}
+
+const page = await getPage(PAGE_ID);
+const fields = page?.fields || {};
+const getField = (key, defaultValue = '') => fields[key] || defaultValue;
+---
+
+<AdminLayout pageTitle="Edit 404 Page">
+  <style>
+    .form-container { max-width: 960px; margin: 0 auto; background: var(--admin-bg-secondary); border: 1px solid var(--admin-border-subtle); padding: 2rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    fieldset { border: 1px solid var(--admin-border-subtle); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; }
+    legend { font-size: 1.25rem; font-weight: 600; padding: 0 0.5rem; color: var(--admin-text-primary); }
+    .form-group { margin-bottom: 1.5rem; }
+    label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--admin-text-primary); }
+    input[type="text"], textarea { width: 100%; padding: 0.5rem 0.75rem; background: var(--admin-bg-tertiary); color: var(--admin-text-primary); border: 1px solid var(--admin-border-subtle); border-radius: 4px; font-size: 1rem; }
+    input[type="text"]:focus, textarea:focus { outline: none; border-color: var(--admin-accent-primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+    textarea { min-height: 100px; }
+    .btn-primary { background: linear-gradient(135deg, #F7DF5B, #B8941F); color: #000; padding: 0.75rem 1.5rem; border: 1px solid #F7DF5B; border-radius: 4px; font-size: 1rem; cursor: pointer; font-weight: 600; }
+    .btn-primary:hover { background: linear-gradient(135deg, #FFE87C, #F7DF5B); transform: translateY(-1px); box-shadow: 0 0 30px rgba(247, 223, 91, 0.35); }
+    .alert { padding: 1rem; border-radius: 4px; margin-bottom: 1rem; }
+    .alert-success { background: rgba(16, 185, 129, 0.1); color: var(--admin-accent-success); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .alert-error { background: rgba(239, 68, 68, 0.1); color: var(--admin-accent-danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+  </style>
+
+  {message && <div class={`alert alert-${message.type}`}>{message.text}</div>}
+
+  <div class="form-container">
+    <form method="POST">
+      <fieldset>
+        <legend>SEO & Metadata</legend>
+        <div class="form-group">
+          <label for="seoTitle">SEO Title</label>
+          <input type="text" id="seoTitle" name="seoTitle" value={getField('seoTitle', 'Page Not Found - Biyu Boxing')} />
+        </div>
+        <div class="form-group">
+          <label for="seoDescription">SEO Description</label>
+          <textarea id="seoDescription" name="seoDescription">{getField('seoDescription', "The page you're looking for doesn't exist. Return to the homepage or explore our fighters and events.")}</textarea>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Main Content</legend>
+        <div class="form-group">
+          <label for="mainText">Large 404 Text</label>
+          <input type="text" id="mainText" name="mainText" value={getField('mainText', '404')} />
+        </div>
+        <div class="form-group">
+          <label for="subtitle">Subtitle</label>
+          <input type="text" id="subtitle" name="subtitle" value={getField('subtitle', 'Page Not Found')} />
+        </div>
+        <div class="form-group">
+          <label for="heading">Heading</label>
+          <input type="text" id="heading" name="heading" value={getField('heading', 'Looks like this page threw in the towel!')} />
+        </div>
+        <div class="form-group">
+          <label for="paragraph">Paragraph</label>
+          <textarea id="paragraph" name="paragraph">{getField('paragraph', "The page you're looking for doesn't exist or may have been moved. Don't worry though - there's plenty more to explore on our site.")}</textarea>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Buttons & Links</legend>
+        <div class="form-group">
+          <label for="homeButtonText">Homepage Button Text</label>
+          <input type="text" id="homeButtonText" name="homeButtonText" value={getField('homeButtonText', 'Back to Homepage')} />
+        </div>
+        <div class="form-group">
+          <label for="fightersButtonText">Fighters Button Text</label>
+          <input type="text" id="fightersButtonText" name="fightersButtonText" value={getField('fightersButtonText', 'Meet Our Fighters')} />
+        </div>
+        <div class="form-group">
+          <label for="quickLinksText">Quick Links Text</label>
+          <input type="text" id="quickLinksText" name="quickLinksText" value={getField('quickLinksText', 'Or explore these popular sections:')} />
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Quote</legend>
+        <div class="form-group">
+          <label for="quoteText">Quote Text</label>
+          <textarea id="quoteText" name="quoteText">{getField('quoteText', "It's not about how hard you hit. It's about how hard you can get hit and keep moving forward.")}</textarea>
+        </div>
+        <div class="form-group">
+          <label for="quoteCite">Quote Citation</label>
+          <input type="text" id="quoteCite" name="quoteCite" value={getField('quoteCite', '- Rocky Balboa')} />
+        </div>
+      </fieldset>
+
+      <div class="form-group">
+        <button type="submit" class="btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</AdminLayout>

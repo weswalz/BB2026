@@ -1,0 +1,179 @@
+---
+import AdminLayout from '../../../components/admin/AdminLayout.astro';
+import MediaSelector from '../../../components/admin/MediaSelector.astro';
+import { getPage, updatePage } from '../../../lib/pages.js';
+import { verifySession } from '../../../lib/auth.js';
+import { verifyCSRFToken, logAudit, getClientIP } from '../../../lib/security.js';
+
+const PAGE_ID = 'box-for-us';
+
+// Get session data for CSRF token
+const sessionCookie = Astro.cookies.get('admin_session')?.value;
+const sessionData = verifySession(sessionCookie);
+
+let message = null;
+
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  const csrfToken = formData.get('csrf_token');
+
+  // Verify CSRF token first
+  if (!verifyCSRFToken(sessionData, csrfToken)) {
+    message = { type: 'error', text: 'Invalid security token. Please refresh and try again.' };
+  } else {
+    const fields = Object.fromEntries(formData.entries());
+    const success = await updatePage(PAGE_ID, fields);
+
+    if (success) {
+      // Log audit event
+      const ipAddress = getClientIP(Astro.request);
+      logAudit({
+        username: sessionData.user.username,
+        action: 'UPDATE',
+        entityType: 'page',
+        entityId: PAGE_ID,
+        ipAddress
+      });
+    }
+
+    message = success ? { type: 'success', text: 'Box for Us page updated successfully!' } : { type: 'error', text: 'Failed to update page.' };
+  }
+}
+
+const page = await getPage(PAGE_ID);
+const fields = page?.fields || {};
+const getField = (key, defaultValue = '') => fields[key] || defaultValue;
+---
+
+<AdminLayout pageTitle="Edit Box for Us Page">
+  <style>
+    .form-container { max-width: 960px; margin: 0 auto; background: var(--admin-bg-secondary); border: 1px solid var(--admin-border-subtle); padding: 2rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    fieldset { border: 1px solid var(--admin-border-subtle); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; }
+    legend { font-size: 1.25rem; font-weight: 600; padding: 0 0.5rem; color: var(--admin-text-primary); }
+    .form-group { margin-bottom: 1.5rem; }
+    label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--admin-text-primary); }
+    input[type="text"], textarea { width: 100%; padding: 0.5rem 0.75rem; background: var(--admin-bg-tertiary); color: var(--admin-text-primary); border: 1px solid var(--admin-border-subtle); border-radius: 4px; font-size: 1rem; }
+    input[type="text"]:focus, textarea:focus { outline: none; border-color: var(--admin-accent-primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+    textarea { min-height: 100px; }
+    .btn-primary { background: linear-gradient(135deg, #F7DF5B, #B8941F); color: #000; padding: 0.75rem 1.5rem; border: 1px solid #F7DF5B; border-radius: 4px; font-size: 1rem; cursor: pointer; font-weight: 600; }
+    .btn-primary:hover { background: linear-gradient(135deg, #FFE87C, #F7DF5B); transform: translateY(-1px); box-shadow: 0 0 30px rgba(247, 223, 91, 0.35); }
+    .alert { padding: 1rem; border-radius: 4px; margin-bottom: 1rem; }
+    .alert-success { background: rgba(16, 185, 129, 0.1); color: var(--admin-accent-success); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .alert-error { background: rgba(239, 68, 68, 0.1); color: var(--admin-accent-danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+  </style>
+
+  {message && <div class={`alert alert-${message.type}`}>{message.text}</div>}
+
+  <div class="form-container">
+    <form method="POST">
+      <input type="hidden" name="csrf_token" value={sessionData?.csrfToken} />
+      <fieldset>
+        <legend>SEO & Metadata</legend>
+        <div class="form-group">
+          <label for="seoTitle">SEO Title</label>
+          <input type="text" id="seoTitle" name="seoTitle" value={getField('seoTitle')} />
+        </div>
+        <div class="form-group">
+          <label for="seoDescription">SEO Description</label>
+          <textarea id="seoDescription" name="seoDescription">{getField('seoDescription')}</textarea>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Hero Section</legend>
+        <div class="form-group">
+          <label for="heroTitle">Title</label>
+          <input type="text" id="heroTitle" name="heroTitle" value={getField('heroTitle', 'BOX FOR US')} />
+        </div>
+        <div class="form-group">
+          <label>Background Image</label>
+          <MediaSelector inputName="heroImage" inputId="heroImage" mediaType="image" initialValue={getField('heroImage')} />
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Career Section</legend>
+        <div class="form-group">
+          <label for="careerTitle">Title</label>
+          <input type="text" id="careerTitle" name="careerTitle" value={getField('careerTitle', 'Career')} />
+        </div>
+        <div class="form-group">
+          <label>Background Image</label>
+          <MediaSelector inputName="careerImage" inputId="careerImage" mediaType="image" initialValue={getField('careerImage')} />
+        </div>
+        <div class="form-group">
+          <label for="careerParagraph1">Paragraph 1</label>
+          <textarea id="careerParagraph1" name="careerParagraph1">{getField('careerParagraph1')}</textarea>
+        </div>
+        <div class="form-group">
+          <label for="careerParagraph2">Paragraph 2</label>
+          <textarea id="careerParagraph2" name="careerParagraph2">{getField('careerParagraph2')}</textarea>
+        </div>
+        <div class="form-group">
+          <label for="careerParagraph3">Paragraph 3</label>
+          <textarea id="careerParagraph3" name="careerParagraph3">{getField('careerParagraph3')}</textarea>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Facilities Section</legend>
+        <div class="form-group">
+          <label for="facilitiesTitle">Title</label>
+          <input type="text" id="facilitiesTitle" name="facilitiesTitle" value={getField('facilitiesTitle', 'Facilities')} />
+        </div>
+        <div class="form-group">
+          <label for="facilitiesParagraph1">Paragraph 1</label>
+          <textarea id="facilitiesParagraph1" name="facilitiesParagraph1">{getField('facilitiesParagraph1')}</textarea>
+        </div>
+        <div class="form-group">
+          <label for="facilitiesParagraph2">Paragraph 2</label>
+          <textarea id="facilitiesParagraph2" name="facilitiesParagraph2">{getField('facilitiesParagraph2')}</textarea>
+        </div>
+        <div class="form-group">
+          <label for="facilitiesParagraph3">Paragraph 3</label>
+          <textarea id="facilitiesParagraph3" name="facilitiesParagraph3">{getField('facilitiesParagraph3')}</textarea>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Leadership Section</legend>
+        <div class="form-group">
+          <label for="leadershipTitle">Title</label>
+          <input type="text" id="leadershipTitle" name="leadershipTitle" value={getField('leadershipTitle', 'Leadership')} />
+        </div>
+        <div class="form-group">
+          <label for="leadershipParagraph1">Paragraph 1</label>
+          <textarea id="leadershipParagraph1" name="leadershipParagraph1">{getField('leadershipParagraph1')}</textarea>
+        </div>
+        <div class="form-group">
+          <label for="leadershipParagraph2">Paragraph 2</label>
+          <textarea id="leadershipParagraph2" name="leadershipParagraph2">{getField('leadershipParagraph2')}</textarea>
+        </div>
+        <div class="form-group">
+          <label for="leadershipParagraph3">Paragraph 3</label>
+          <textarea id="leadershipParagraph3" name="leadershipParagraph3">{getField('leadershipParagraph3')}</textarea>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Application Form</legend>
+        <div class="form-group">
+          <label for="formTitle">Form Title</label>
+          <input type="text" id="formTitle" name="formTitle" value={getField('formTitle', 'Apply to Join BiYu Promotions')} />
+        </div>
+        <div class="form-group">
+          <label for="formSubtitle">Form Subtitle</label>
+          <textarea id="formSubtitle" name="formSubtitle">{getField('formSubtitle', 'Ready to take your boxing career to the next level? Fill out the form below and our team will be in touch.')}</textarea>
+        </div>
+        <div class="form-group">
+          <label for="formSubmitButton">Submit Button Text</label>
+          <input type="text" id="formSubmitButton" name="formSubmitButton" value={getField('formSubmitButton', 'Submit Application')} />
+        </div>
+      </fieldset>
+
+      <div class="form-group">
+        <button type="submit" class="btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</AdminLayout>

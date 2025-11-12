@@ -1,0 +1,98 @@
+# Robots.txt for BiYu Promotions
+# Optimized for SEO while preserving existing rankings
+# Last updated: January 2025
+
+# Allow all legitimate search engine crawlers
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /_astro/
+Disallow: /private/
+Disallow: /*.json$
+Disallow: /*?*
+Allow: /sitemap.xml
+Allow: /llms.txt
+Allow: /llms-full.txt
+
+# Specific rules for major search engines
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+Sitemap: https://biyuboxing.com/sitemap.xml
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+Sitemap: https://biyuboxing.com/sitemap.xml
+
+User-agent: Slurp
+Allow: /
+Crawl-delay: 1
+Sitemap: https://biyuboxing.com/sitemap.xml
+
+User-agent: DuckDuckBot
+Allow: /
+Crawl-delay: 1
+
+# AI and LLM crawlers - Allow with restrictions
+User-agent: GPTBot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Crawl-delay: 2
+
+User-agent: ChatGPT-User
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Crawl-delay: 2
+
+User-agent: CCBot
+Allow: /
+Crawl-delay: 10
+
+User-agent: ClaudeBot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Crawl-delay: 2
+
+User-agent: Claude-Web
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Crawl-delay: 2
+
+User-agent: anthropic-ai
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Crawl-delay: 2
+
+User-agent: Google-Extended
+Allow: /
+Crawl-delay: 1
+
+# Block malicious bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+# Performance optimization - limit aggressive crawlers
+User-agent: *
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: https://biyuboxing.com/sitemap.xml
+
+# Additional directives for AI models
+# See /llms.txt for AI-specific content guidance

@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.astro/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+deploy-*.log
+
+# Database
+database/*.db
+database/*.db-shm
+database/*.db-wal
+
+# OS files
+.DS_Store
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+
+# Deployment scripts (optional - uncomment if you don't want to commit these)
+# deploy.sh
+# deploy-sqlite.sh
+# server-fix.sh
+# setup-server.sh

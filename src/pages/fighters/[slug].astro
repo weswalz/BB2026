@@ -1,0 +1,138 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/sections/Header.astro';
+import Footer from '../../components/sections/Footer.astro';
+import BoxForUsSection from '../../components/sections/BoxForUsSection.astro';
+import { getFighterBySlug } from '../../lib/database.js';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+const fighter = await getFighterBySlug(slug);
+
+if (!fighter) {
+  return Astro.redirect('/404');
+}
+---
+
+<Layout 
+  title={`${fighter.name} - BiYu Promotions | Fighter Profile`}
+  description={`${fighter.name} - ${fighter.weight_class} boxer with BiYu Promotions. Win: ${fighter.wins}, Loss: ${fighter.losses}, Draw: ${fighter.draws}, KOs: ${fighter.kos}`}
+>
+  <Header />
+  
+  <main class="min-h-screen">
+    <!-- Hero Section -->
+    <section class="relative h-[70vh] min-h-[500px] flex items-center justify-center text-white overflow-hidden">
+      <div class="absolute inset-0 z-0">
+        <img 
+          src={fighter.image || '/images/default-fighter.webp'}
+          alt={fighter.name}
+          class="w-full h-full object-cover"
+        />
+        <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-black/60 to-black/80"></div>
+      </div>
+      
+      <div class="relative z-10 container mx-auto px-4 text-center">
+        <div class="flex items-center justify-center mb-4">
+          <img src={fighter.flag} alt={`${fighter.nationality} flag`} class="w-16 h-10 rounded-sm mr-4" />
+        </div>
+        <h1 class="text-5xl md:text-7xl font-display font-black uppercase tracking-wider mb-4 hero-text text-[#FFD700]">
+          {fighter.name}
+        </h1>
+        <p class="text-2xl md:text-3xl font-bold uppercase">
+          {fighter.weightClass}
+        </p>
+      </div>
+    </section>
+
+    <!-- Fighter Details Section -->
+    <section class="py-20 bg-black text-white">
+      <div class="container mx-auto px-4">
+        <div class="max-w-6xl mx-auto">
+          <div class="grid lg:grid-cols-2 gap-12 items-start">
+            <!-- Fighter Image -->
+            <div class="text-center">
+              <img 
+                src={fighter.image || '/images/default-fighter.webp'}
+                alt={fighter.name}
+                class="w-full max-w-md mx-auto rounded-lg shadow-2xl"
+              />
+            </div>
+            
+            <!-- Fighter Info -->
+            <div>
+              <h2 class="text-4xl font-display font-bold mb-8 text-[#FFD700]">Fighter Profile</h2>
+              
+              <!-- Stats Grid -->
+              <div class="grid grid-cols-4 gap-4 mb-8">
+                <div class="bg-[#FFD700] text-black py-6 px-4 text-center rounded">
+                  <div class="text-3xl font-black">{fighter.wins}</div>
+                  <div class="text-sm font-bold uppercase">WINS</div>
+                </div>
+                <div class="bg-red-600 text-white py-6 px-4 text-center rounded">
+                  <div class="text-3xl font-black">{fighter.losses}</div>
+                  <div class="text-sm font-bold uppercase">LOSSES</div>
+                </div>
+                <div class="bg-gray-600 text-white py-6 px-4 text-center rounded">
+                  <div class="text-3xl font-black">{fighter.draws}</div>
+                  <div class="text-sm font-bold uppercase">DRAWS</div>
+                </div>
+                <div class="bg-orange-600 text-white py-6 px-4 text-center rounded">
+                  <div class="text-3xl font-black">{fighter.kos}</div>
+                  <div class="text-sm font-bold uppercase">KOs</div>
+                </div>
+              </div>
+              
+              <!-- Fighter Details -->
+              <div class="space-y-4">
+                <div class="flex justify-between">
+                  <span class="font-bold text-[#FFD700]">Weight Class:</span>
+                  <span>{fighter.weightClass}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="font-bold text-[#FFD700]">Nationality:</span>
+                  <span>{fighter.nationality}</span>
+                </div>
+                {fighter.height && (
+                  <div class="flex justify-between">
+                    <span class="font-bold text-[#FFD700]">Height:</span>
+                    <span>{fighter.height}</span>
+                  </div>
+                )}
+                {fighter.reach && (
+                  <div class="flex justify-between">
+                    <span class="font-bold text-[#FFD700]">Reach:</span>
+                    <span>{fighter.reach}</span>
+                  </div>
+                )}
+                {fighter.stance && (
+                  <div class="flex justify-between">
+                    <span class="font-bold text-[#FFD700]">Stance:</span>
+                    <span>{fighter.stance}</span>
+                  </div>
+                )}
+                <div class="flex justify-between">
+                  <span class="font-bold text-[#FFD700]">Professional Record:</span>
+                  <span>{fighter.wins}-{fighter.losses}-{fighter.draws}</span>
+                </div>
+              </div>
+              
+              {fighter.bio && (
+                <div class="mt-8">
+                  <h3 class="text-2xl font-bold mb-4 text-[#FFD700]">Biography</h3>
+                  <p class="text-lg leading-relaxed">{fighter.bio}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <BoxForUsSection />
+    
+  </main>
+
+  <Footer />
+</Layout>

@@ -1,0 +1,15 @@
+---
+const AnimatedButton = (await import('./motion/AnimatedButton.tsx')).default;
+
+export interface Props {
+  href: string;
+  variant?: 'primary' | 'secondary';
+  className?: string;
+}
+
+const { href, variant = 'primary', className = '' } = Astro.props;
+---
+
+<AnimatedButton href={href} variant={variant} className={className} client:visible>
+  <slot />
+</AnimatedButton>

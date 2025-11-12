@@ -1,0 +1,173 @@
+---
+import AdminLayout from '../../components/admin/AdminLayout.astro';
+import { getAllEvents, deleteEvent, restoreEvent } from '../../lib/events.js';
+import { requireAuth, isAdministrator } from '../../lib/auth-middleware.js';
+import { verifyCSRFToken, logAudit, getClientIP } from '../../lib/security.js';
+import { verifySession } from '../../lib/auth.js';
+
+// Check authentication first, before any async operations
+const authRedirect = requireAuth(Astro);
+if (authRedirect) return authRedirect;
+
+// Get session data for CSRF token
+const sessionCookie = Astro.cookies.get('admin_session')?.value;
+const sessionData = verifySession(sessionCookie);
+const isAdmin = isAdministrator(Astro);
+
+// Handle delete and restore actions
+let message = null;
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  const action = formData.get('action');
+  const eventId = formData.get('eventId');
+  const csrfToken = formData.get('csrf_token');
+
+  // Verify CSRF token
+  if (!verifyCSRFToken(sessionData, csrfToken)) {
+    message = { type: 'error', text: 'Invalid security token. Please refresh and try again.' };
+  } else if (action === 'delete' && eventId) {
+    try {
+      const deleted = deleteEvent(eventId, sessionData.user.username);
+      if (deleted) {
+        // Log deletion
+        const ipAddress = getClientIP(Astro.request);
+        logAudit({
+          username: sessionData.user.username,
+          action: 'DELETE',
+          entityType: 'event',
+          entityId: eventId,
+          ipAddress
+        });
+        message = { type: 'success', text: 'Event deleted successfully!' };
+      } else {
+        message = { type: 'error', text: 'Failed to delete event.' };
+      }
+    } catch (error) {
+      message = { type: 'error', text: 'Error deleting event.' };
+    }
+  } else if (action === 'restore' && eventId && isAdmin) {
+    try {
+      const restored = restoreEvent(eventId);
+      if (restored) {
+        // Log restoration
+        const ipAddress = getClientIP(Astro.request);
+        logAudit({
+          username: sessionData.user.username,
+          action: 'RESTORE',
+          entityType: 'event',
+          entityId: eventId,
+          ipAddress
+        });
+        message = { type: 'success', text: 'Event restored successfully!' };
+      } else {
+        message = { type: 'error', text: 'Failed to restore event.' };
+      }
+    } catch (error) {
+      message = { type: 'error', text: 'Error restoring event.' };
+    }
+  }
+}
+
+// Get events - admins can see deleted items
+const events = await getAllEvents({ includeDeleted: isAdmin });
+---
+
+<AdminLayout pageTitle="Events">
+  <div slot="header-actions">
+    <a href="/admin/events/new" class="btn btn-primary">
+      Add New Event
+    </a>
+  </div>
+
+  {message && (
+    <div class={`p-4 rounded-lg mb-4 border ${
+      message.type === 'success'
+        ? 'bg-green-500/10 text-green-600 border-green-500/30'
+        : 'bg-red-500/10 text-red-600 border-red-500/30'
+    }`}>
+      {message.text}
+    </div>
+  )}
+
+  <style>
+    table { width: 100%; border-collapse: collapse; background: var(--admin-bg-secondary); border-radius: 8px; }
+    th { padding: 0.75rem; text-align: left; color: var(--admin-text-primary); border-bottom: 1px solid var(--admin-border-default); }
+    td { padding: 0.75rem; color: var(--admin-text-primary); border-bottom: 1px solid var(--admin-border-subtle); }
+    tbody tr:hover { background: var(--admin-bg-hover); }
+  </style>
+
+  <div class="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
+    {events.length > 0 ? (
+      <table class="w-full border-collapse">
+        <thead>
+          <tr class="bg-muted/50 border-b border-border">
+            <th class="px-4 py-3 text-left font-semibold text-foreground">Image</th>
+            <th class="px-4 py-3 text-left font-semibold text-foreground">Title</th>
+            <th class="px-4 py-3 text-left font-semibold text-foreground">Date</th>
+            <th class="px-4 py-3 text-left font-semibold text-foreground">Location</th>
+            <th class="px-4 py-3 text-left font-semibold text-foreground">Status</th>
+            <th class="px-4 py-3 text-left font-semibold text-foreground">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {events.map(event => (
+            <tr class={`border-b border-border last:border-0 transition-colors hover:bg-muted/30 ${event.isDeleted ? 'opacity-60' : ''}`}>
+              <td class="px-4 py-3">
+                {event.image && (
+                  <img src={event.image} alt={event.title} class="w-20 h-20 object-cover rounded-lg" />
+                )}
+              </td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <span class="font-semibold text-foreground">{event.title}</span>
+                  {event.isDeleted && (
+                    <span class="inline-block px-2 py-1 text-xs font-medium rounded bg-red-500/20 text-red-600 border border-red-500/30">
+                      DELETED
+                    </span>
+                  )}
+                </div>
+              </td>
+              <td class="px-4 py-3 text-foreground">{new Date(event.date).toLocaleDateString()}</td>
+              <td class="px-4 py-3 text-foreground">{event.location}</td>
+              <td class="px-4 py-3 text-foreground">{event.status}</td>
+              <td class="px-4 py-3">
+                <div class="flex gap-2">
+                  {!event.isDeleted && (
+                    <>
+                      <a href={`/admin/events/edit/${event.id}`} class="btn btn-primary btn-sm">
+                        Edit
+                      </a>
+                      <form method="POST" class="inline">
+                        <input type="hidden" name="action" value="delete" />
+                        <input type="hidden" name="eventId" value={event.id} />
+                        <input type="hidden" name="csrf_token" value={sessionData?.csrfToken} />
+                        <button type="submit" class="btn btn-danger btn-sm"
+                          onclick="return confirm('Are you sure you want to delete this event?')">
+                          Delete
+                        </button>
+                      </form>
+                    </>
+                  )}
+                  {event.isDeleted && isAdmin && (
+                    <form method="POST" class="inline">
+                      <input type="hidden" name="action" value="restore" />
+                      <input type="hidden" name="eventId" value={event.id} />
+                      <input type="hidden" name="csrf_token" value={sessionData?.csrfToken} />
+                      <button type="submit" class="btn btn-secondary btn-sm">
+                        Restore
+                      </button>
+                    </form>
+                  )}
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    ) : (
+      <div class="text-center py-12 text-muted-foreground">
+        <p>No events found. Click "Add New Event" to create your first event.</p>
+      </div>
+    )}
+  </div>
+</AdminLayout>

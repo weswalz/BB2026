@@ -1,0 +1,134 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/sections/Header.astro';
+import Footer from '../../components/sections/Footer.astro';
+import BoxForUsSection from '../../components/sections/BoxForUsSection.astro';
+import { getAllNews } from '../../lib/database.js';
+import { getPage } from '../../lib/pages.js';
+
+export const prerender = false;
+
+const PAGE_ID = 'news-listing';
+const page = await getPage(PAGE_ID);
+const fields = page?.fields || {};
+const getField = (key, defaultValue = '') => fields[key] || defaultValue;
+
+// Get all news articles from MongoDB
+let newsArticles = [];
+let featuredArticle = null;
+let otherArticles = [];
+
+try {
+  const allNews = await getAllNews();
+  newsArticles = allNews.filter(article => article.published);
+  
+  // Get featured article (first/newest)
+  featuredArticle = newsArticles.find(article => article.featured) || (newsArticles.length > 0 ? newsArticles[0] : null);
+  
+  // Get other articles (excluding featured)
+  otherArticles = newsArticles.filter(article => article !== featuredArticle);
+} catch (error) {
+  console.error('Error fetching news:', error);
+}
+
+// Format date function
+const formatDate = (date) => {
+  if (!date) return '';
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long'
+  });
+};
+---
+
+<Layout 
+  title={getField('seoTitle', 'News - BiYu Promotions | Latest Boxing News & Updates')} 
+  description={getField('seoDescription', 'Stay updated with the latest boxing news from BiYu Promotions. Fighter signings, fight results, upcoming events, and exclusive updates.')}
+>
+  <Header />
+  
+  <main class="min-h-screen">
+    <!-- Hero Section -->
+    <section class="relative h-[60vh] min-h-[400px] flex items-center justify-center text-white">
+      <div class="absolute inset-0 z-0">
+        <img 
+          src={getField('heroImage', '/images/newshero.webp')} 
+          alt="BiYu Promotions News" 
+          class="w-full h-full object-cover"
+        />
+        <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70"></div>
+      </div>
+      
+      <div class="relative z-10 container mx-auto px-4 text-center">
+        <h1 class="text-5xl md:text-7xl font-display font-bold mb-6 hero-text boxing-glow">
+          {getField('heroTitle', 'NEWS')}
+        </h1>
+      </div>
+    </section>
+
+    <!-- Latest News Section -->
+    <section class="py-16 bg-black text-white">
+      <div class="container mx-auto px-4">
+        <div class="max-w-4xl mx-auto">
+          <h2 class="text-3xl font-bold text-center mb-12 text-[#FFD700]">{getField('sectionTitle', 'Latest News')}</h2>
+          
+          <!-- Featured Article -->
+          {featuredArticle && (
+            <article class="mb-16">
+              <div class="grid lg:grid-cols-2 gap-8 items-start">
+                <div class="lg:order-2">
+                  <img 
+                    src={featuredArticle.featuredImage || "/images/ChavonStillwell-news.webp"} 
+                    alt={featuredArticle.title}
+                    class="w-full h-auto rounded"
+                    loading="lazy"
+                  />
+                </div>
+                <div class="lg:order-1">
+                  <h3 class="text-3xl font-display font-bold mb-4 text-[#FFD700]">{featuredArticle.title}</h3>
+                  <p class="text-lg mb-4">{featuredArticle.excerpt}</p>
+                  <div class="flex items-center gap-4">
+                    <span class="text-sm text-gray-400">{formatDate(featuredArticle.publishedAt)}</span>
+                    <a href={`/news/${featuredArticle.slug}`} class="biyu-unified-btn px-4 py-2 text-sm">
+                      {getField('readMoreButtonText', 'Read More')}
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </article>
+          )}
+          
+          <!-- News Grid -->
+          <div class="grid md:grid-cols-3 gap-8">
+            {otherArticles.map((article) => (
+              <article>
+                <div class="mb-4">
+                  <img
+                    src={article.featuredImage || '/images/newshero.webp'}
+                    alt={article.title}
+                    class="w-full h-48 object-cover rounded"
+                    loading="lazy"
+                  />
+                </div>
+                <h3 class="text-xl font-display font-bold mb-2 text-[#FFD700]">{article.title}</h3>
+                <p class="text-sm text-gray-300 mb-3">{article.excerpt}</p>
+                <div class="flex items-center justify-between">
+                  <span class="text-xs text-gray-400">{formatDate(article.publishedAt)}</span>
+                  <a href={`/news/${article.slug}`} class="biyu-unified-btn px-3 py-1 text-xs">
+                    {getField('readMoreButtonText', 'Read More')}
+                  </a>
+                </div>
+              </article>
+            ))}
+          </div>
+          
+        </div>
+      </div>
+    </section>
+    
+    <BoxForUsSection />
+    
+  </main>
+
+  <Footer />
+</Layout>

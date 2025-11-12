@@ -1,0 +1,578 @@
+---
+import { checkAuth } from '../../lib/auth-middleware.js';
+import '../../styles/global.css';
+import '../../styles/admin.css';
+
+const { pageTitle = 'Admin' } = Astro.props;
+
+// Check authentication (pages should handle requireAuth before async operations)
+const authResult = checkAuth(Astro);
+
+// Get current page for active menu highlighting
+const currentPath = Astro.url.pathname;
+
+// Navigation items with Lucide icon names
+const navItems = [
+  {
+    title: 'Overview',
+    items: [
+      { name: 'Dashboard', path: '/admin/dashboard', icon: 'layout-dashboard' },
+    ]
+  },
+  {
+    title: 'Content',
+    items: [
+      { name: 'News', path: '/admin/news', icon: 'newspaper' },
+      { name: 'Events', path: '/admin/events', icon: 'calendar' },
+      { name: 'Fighters', path: '/admin/fighters', icon: 'users' },
+      { name: 'Media Gallery', path: '/admin/media', icon: 'image' },
+      { name: 'Pages', path: '/admin/pages', icon: 'file-text' },
+    ]
+  },
+];
+
+// Only show configuration section to administrators
+if (authResult.user?.role === 'administrator') {
+  navItems.push({
+    title: 'Configuration',
+    items: [
+      { name: 'Globals', path: '/admin/globals', icon: 'globe' },
+      { name: 'Settings', path: '/admin/settings', icon: 'settings' },
+      { name: 'Activity Log', path: '/admin/activity-log', icon: 'scroll-text' },
+    ]
+  });
+}
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{pageTitle} - BiYu Boxing Admin</title>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest" onload="initializeLucideIcons()"></script>
+</head>
+<body class="admin-layout dark">
+
+  <!-- Sidebar -->
+  <aside class="admin-sidebar" id="adminSidebar">
+
+    <!-- Sidebar Header -->
+    <div class="admin-sidebar-header">
+      <div class="admin-sidebar-logo">
+        <span class="admin-sidebar-logo-text">BiYu Boxing</span>
+      </div>
+      <button class="admin-sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+        <i data-lucide="panel-left" class="admin-nav-icon"></i>
+      </button>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <nav class="admin-sidebar-nav">
+      {navItems.map(section => (
+        <div class="admin-nav-section">
+          <div class="admin-nav-section-title">{section.title}</div>
+          {section.items.map(item => (
+            <a
+              href={item.path}
+              class={`admin-nav-item ${currentPath.startsWith(item.path) ? 'active' : ''}`}
+            >
+              <i data-lucide={item.icon} class="admin-nav-icon"></i>
+              <span class="admin-nav-text">{item.name}</span>
+            </a>
+          ))}
+        </div>
+      ))}
+    </nav>
+
+  </aside>
+
+  <!-- Top Bar -->
+  <header class="admin-topbar">
+
+    <!-- Page Title & Search -->
+    <div style="display: flex; align-items: center; gap: 2rem;">
+      <button class="admin-sidebar-toggle" id="mobileSidebarToggle" aria-label="Toggle menu" style="display: none;">
+        <i data-lucide="menu" class="admin-nav-icon"></i>
+      </button>
+      <h1 class="admin-topbar-title">{pageTitle}</h1>
+    </div>
+
+    <!-- Top Bar Actions -->
+    <div class="admin-topbar-actions">
+
+      <!-- Search Bar -->
+      <div class="admin-topbar-search">
+        <i data-lucide="search" class="admin-topbar-search-icon"></i>
+        <input
+          type="text"
+          class="admin-topbar-search-input"
+          placeholder="Search..."
+          id="globalSearch"
+        />
+      </div>
+
+      <!-- Header Actions Slot -->
+      <slot name="header-actions" />
+
+      <!-- User Menu -->
+      <div class="admin-user-menu" id="userMenu">
+        <button class="admin-user-menu-trigger" id="userMenuTrigger" aria-label="User menu">
+          <div class="admin-user-avatar">
+            {authResult.user?.username?.[0].toUpperCase() || 'A'}
+          </div>
+          <div class="admin-user-info">
+            <span class="admin-user-name">{authResult.user?.displayName || authResult.user?.username || 'Admin'}</span>
+            <span class="admin-user-role">{authResult.user?.role === 'administrator' ? 'Administrator' : 'Editor'}</span>
+          </div>
+          <i data-lucide="chevron-down" style="width: 16px; height: 16px;"></i>
+        </button>
+
+        <!-- User Dropdown -->
+        <div class="admin-user-dropdown" id="userDropdown">
+          <a href="/admin/profile" class="admin-dropdown-item">
+            <i data-lucide="user" style="width: 16px; height: 16px;"></i>
+            Profile
+          </a>
+          {authResult.user?.role === 'administrator' && (
+            <a href="/admin/settings" class="admin-dropdown-item">
+              <i data-lucide="settings" style="width: 16px; height: 16px;"></i>
+              Settings
+            </a>
+          )}
+          <div class="admin-dropdown-divider"></div>
+          <a href="/" class="admin-dropdown-item" target="_blank">
+            <i data-lucide="external-link" style="width: 16px; height: 16px;"></i>
+            View Site
+          </a>
+          <div class="admin-dropdown-divider"></div>
+          <a href="/api/auth/logout" class="admin-dropdown-item danger">
+            <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
+            Logout
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="admin-main">
+    <div class="admin-fade-in">
+      <slot />
+    </div>
+  </main>
+
+  <script>
+    // Initialize Lucide icons after library loads
+    window.initializeLucideIcons = function() {
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+    };
+
+    // Also try to initialize on DOMContentLoaded as a fallback
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+    });
+
+    // Sidebar collapse functionality
+    const sidebar = document.getElementById('adminSidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
+
+    // Load sidebar state from localStorage
+    const sidebarCollapsed = localStorage.getItem('adminSidebarCollapsed') === 'true';
+    if (sidebarCollapsed) {
+      sidebar?.classList.add('collapsed');
+    }
+
+    // Desktop sidebar toggle
+    sidebarToggle?.addEventListener('click', () => {
+      sidebar?.classList.toggle('collapsed');
+      const isCollapsed = sidebar?.classList.contains('collapsed');
+      localStorage.setItem('adminSidebarCollapsed', isCollapsed);
+
+      // Reinitialize icons after toggle
+      setTimeout(() => {
+        if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+        }
+      }, 300);
+    });
+
+    // Mobile sidebar toggle
+    mobileSidebarToggle?.addEventListener('click', () => {
+      sidebar?.classList.toggle('mobile-open');
+    });
+
+    // User menu dropdown
+    const userMenuTrigger = document.getElementById('userMenuTrigger');
+    const userMenu = document.getElementById('userMenu');
+    const userDropdown = document.getElementById('userDropdown');
+
+    userMenuTrigger?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      userMenu?.classList.toggle('open');
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (userMenu && !userMenu.contains(e.target)) {
+        userMenu.classList.remove('open');
+      }
+
+      // Close mobile sidebar when clicking outside
+      if (sidebar && !sidebar.contains(e.target) && !mobileSidebarToggle?.contains(e.target)) {
+        sidebar.classList.remove('mobile-open');
+      }
+    });
+
+    // Close dropdown on escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        userMenu?.classList.remove('open');
+        sidebar?.classList.remove('mobile-open');
+      }
+    });
+
+    // Global search functionality (basic implementation)
+    const globalSearch = document.getElementById('globalSearch');
+    globalSearch?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const query = e.target.value.trim();
+        if (query) {
+          console.log('Search query:', query);
+          // Implement search functionality here
+        }
+      }
+    });
+
+    // Keyboard shortcut for search (Ctrl/Cmd + K)
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        globalSearch?.focus();
+      }
+    });
+
+    // Show mobile menu toggle on smaller screens
+    const updateMobileToggleVisibility = () => {
+      if (window.innerWidth <= 768) {
+        mobileSidebarToggle.style.display = 'flex';
+      } else {
+        mobileSidebarToggle.style.display = 'none';
+        sidebar?.classList.remove('mobile-open');
+      }
+    };
+
+    updateMobileToggleVisibility();
+    window.addEventListener('resize', updateMobileToggleVisibility);
+
+    // Smooth scroll behavior
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+
+    // Add active state animation
+    document.querySelectorAll('.admin-nav-item').forEach(item => {
+      item.addEventListener('mouseenter', () => {
+        if (!item.classList.contains('active')) {
+          item.style.transform = 'translateX(4px)';
+        }
+      });
+
+      item.addEventListener('mouseleave', () => {
+        item.style.transform = '';
+      });
+    });
+
+    // Add page load animation
+    document.addEventListener('DOMContentLoaded', () => {
+      const mainContent = document.querySelector('.admin-main');
+      if (mainContent) {
+        mainContent.style.opacity = '0';
+        setTimeout(() => {
+          mainContent.style.transition = 'opacity 0.3s ease-out';
+          mainContent.style.opacity = '1';
+        }, 50);
+      }
+    });
+
+    // Auto-hide notifications after timeout (if implemented)
+    const autoHideNotifications = () => {
+      const notifications = document.querySelectorAll('.alert');
+      notifications.forEach(notification => {
+        if (!notification.dataset.persistent) {
+          setTimeout(() => {
+            notification.style.transition = 'opacity 0.3s ease-out';
+            notification.style.opacity = '0';
+            setTimeout(() => {
+              notification.remove();
+            }, 300);
+          }, 5000);
+        }
+      });
+    };
+
+    autoHideNotifications();
+  </script>
+
+  <style>
+    /* Additional page-specific styles */
+    .alert {
+      padding: var(--admin-space-4);
+      border-radius: var(--admin-radius-lg);
+      margin-bottom: var(--admin-space-4);
+      display: flex;
+      align-items: flex-start;
+      gap: var(--admin-space-3);
+      border: 1px solid;
+    }
+
+    .alert-success {
+      background-color: rgba(16, 185, 129, 0.1);
+      color: var(--admin-accent-success);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .alert-error {
+      background-color: rgba(239, 68, 68, 0.1);
+      color: var(--admin-accent-danger);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .alert-warning {
+      background-color: rgba(245, 158, 11, 0.1);
+      color: var(--admin-accent-warning);
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    .alert-info {
+      background-color: rgba(59, 130, 246, 0.1);
+      color: var(--admin-accent-primary);
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    .container {
+      background-color: var(--admin-bg-secondary);
+      padding: var(--admin-space-6);
+      border-radius: var(--admin-radius-lg);
+      border: 1px solid var(--admin-border-subtle);
+      box-shadow: var(--admin-shadow-sm);
+    }
+
+    /* Button Styles */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--admin-space-2);
+      padding: var(--admin-space-3) var(--admin-space-4);
+      border-radius: var(--admin-radius-md);
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: all var(--admin-transition-fast);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--admin-gold-primary), var(--admin-gold-dark));
+      color: #000;
+      border: 1px solid var(--admin-gold-primary);
+      font-weight: 600;
+      box-shadow: 0 0 20px rgba(247, 223, 91, 0.2);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #FFE87C, var(--admin-gold-primary));
+      transform: translateY(-2px);
+      box-shadow: 0 0 30px rgba(247, 223, 91, 0.35), var(--admin-shadow-md);
+    }
+
+    .btn-secondary {
+      background-color: var(--admin-bg-tertiary);
+      color: var(--admin-text-primary);
+      border: 1px solid var(--admin-border-default);
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--admin-bg-hover);
+      border-color: var(--admin-border-emphasis);
+    }
+
+    .btn-danger {
+      background-color: var(--admin-accent-danger);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background-color: #dc2626;
+      transform: translateY(-1px);
+      box-shadow: var(--admin-shadow-md);
+    }
+
+    .btn-ghost {
+      background-color: transparent;
+      color: var(--admin-text-secondary);
+    }
+
+    .btn-ghost:hover {
+      background-color: var(--admin-bg-hover);
+      color: var(--admin-text-primary);
+    }
+
+    /* Form Styles */
+    .form-group {
+      margin-bottom: var(--admin-space-5);
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--admin-text-primary);
+      margin-bottom: var(--admin-space-2);
+    }
+
+    .form-input,
+    .form-textarea,
+    .form-select {
+      width: 100%;
+      padding: var(--admin-space-3);
+      background-color: var(--admin-bg-tertiary);
+      border: 1px solid var(--admin-border-subtle);
+      border-radius: var(--admin-radius-md);
+      color: var(--admin-text-primary);
+      font-size: 0.875rem;
+      transition: all var(--admin-transition-fast);
+    }
+
+    .form-input:focus,
+    .form-textarea:focus,
+    .form-select:focus {
+      outline: none;
+      border-color: var(--admin-accent-primary);
+      background-color: var(--admin-bg-elevated);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    /* Table Styles */
+    .table-container {
+      overflow-x: auto;
+      border-radius: var(--admin-radius-lg);
+      border: 1px solid var(--admin-border-subtle);
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .table thead {
+      background-color: var(--admin-bg-tertiary);
+    }
+
+    .table th {
+      padding: var(--admin-space-4);
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--admin-text-secondary);
+      border-bottom: 1px solid var(--admin-border-subtle);
+    }
+
+    .table td {
+      padding: var(--admin-space-4);
+      color: var(--admin-text-primary);
+      border-bottom: 1px solid var(--admin-border-subtle);
+    }
+
+    .table tbody tr:hover {
+      background-color: var(--admin-bg-tertiary);
+    }
+
+    .table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Badge Styles */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: var(--admin-space-1) var(--admin-space-3);
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .badge-success {
+      background-color: rgba(16, 185, 129, 0.2);
+      color: var(--admin-accent-success);
+    }
+
+    .badge-warning {
+      background-color: rgba(245, 158, 11, 0.2);
+      color: var(--admin-accent-warning);
+    }
+
+    .badge-danger {
+      background-color: rgba(239, 68, 68, 0.2);
+      color: var(--admin-accent-danger);
+    }
+
+    .badge-info {
+      background-color: rgba(59, 130, 246, 0.2);
+      color: var(--admin-accent-primary);
+    }
+
+    /* Grid System */
+    .grid {
+      display: grid;
+      gap: var(--admin-space-6);
+    }
+
+    .grid-cols-2 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .grid-cols-3 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .grid-cols-4 {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    @media (max-width: 768px) {
+      .grid-cols-2,
+      .grid-cols-3,
+      .grid-cols-4 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</body>
+</html>

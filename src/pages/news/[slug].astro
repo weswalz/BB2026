@@ -1,0 +1,105 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/sections/Header.astro';
+import Footer from '../../components/sections/Footer.astro';
+import BoxForUsSection from '../../components/sections/BoxForUsSection.astro';
+import { getNewsBySlug } from '../../lib/database.js';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+const article = await getNewsBySlug(slug);
+
+if (!article) {
+  return Astro.redirect('/404');
+}
+
+const formatDate = (date) => {
+  if (!date) return '';
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return dateObj.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
+---
+
+<Layout 
+  title={`${article.title} - BiYu Promotions | Boxing News`}
+  description={article.excerpt || `Latest boxing news from BiYu Promotions: ${article.title}`}
+>
+  <Header />
+  
+  <main class="min-h-screen">
+    <!-- Hero Section -->
+    <section class="relative h-[60vh] min-h-[400px] flex items-center justify-center text-white">
+      <div class="absolute inset-0 z-0">
+        <img 
+          src={article.featuredImage || '/images/newshero.webp'}
+          alt={article.title}
+          class="w-full h-full object-cover"
+        />
+        <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-black/60 to-black/80"></div>
+      </div>
+      
+      <div class="relative z-10 container mx-auto px-4 text-center">
+        <h1 class="text-4xl md:text-6xl font-display font-bold mb-4 hero-text text-[#FFD700]">
+          {article.title}
+        </h1>
+        <p class="text-lg md:text-xl max-w-3xl mx-auto">
+          {formatDate(article.publishedAt)}
+        </p>
+      </div>
+    </section>
+
+    <!-- Article Content -->
+    <section class="py-16 bg-black text-white">
+      <div class="container mx-auto px-4">
+        <div class="max-w-4xl mx-auto">
+          <article class="prose prose-invert prose-lg max-w-none article-content">
+
+            <div class="text-lg leading-relaxed">
+              <p class="text-xl mb-6 font-semibold text-[#FFD700]">{article.excerpt}</p>
+
+              {article.content ? (
+                <div class="article-body" set:html={article.content} />
+              ) : (
+                <div>
+                  <p>Full article content coming soon...</p>
+                  <p class="mt-4">
+                    <a href="/news/" class="biyu-unified-btn inline-block px-6 py-3">
+                      Back to All News
+                    </a>
+                  </p>
+                </div>
+              )}
+            </div>
+          </article>
+          
+          <div class="mt-12 pt-8 border-t border-gray-700">
+            <a href="/news/" class="biyu-unified-btn inline-block px-6 py-3">
+              ← Back to All News
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <BoxForUsSection />
+    
+  </main>
+
+  <Footer />
+</Layout>
+
+<style>
+  .article-content .article-body p {
+    margin-bottom: 2rem !important;
+    line-height: 1.8 !important;
+  }
+
+  .article-content .article-body p:last-child {
+    margin-bottom: 0 !important;
+  }
+</style>
